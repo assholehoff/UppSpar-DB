@@ -1,0 +1,73 @@
+{
+    "Close" : "Close",
+    "Create" : "Create",
+    "Create new database" : "Create new database",
+    "Export" : "Export",
+    "Items" : "Items",
+    "Journal" : "Journal",
+    "Metadata" : "Metadata",
+    "New" : "New",
+    "Open" : "Open",
+    "Open existing or create new database?" : "Open existing or create new database?",
+    "Open database" : "Open database",
+    "Settings" : "Settings",
+    "Wishlist" : "Wishlist",
+
+    "message" : "message",
+    "scroll to new entries" : "scroll to new entries",
+
+    "dialog.save.excel.title" : "Export Excel spreadsheet",
+
+    "item.form.itemid.text" : "Item ID",
+    "item.form.name.text" : "Name",
+    "item.form.category.text" : "Category",
+    "item.form.price.text" : "Price",
+    "item.form.vat.text" : "VAT",
+    "item.form.imgurl.text" : "Image URL",
+    "item.form.specsurl.text" : "Spec sheet URL",
+    "item.form.adddesc.text" : "Additional information",
+    "item.form.longdesc.text" : "Description",
+    "item.form.manufacturer.text" : "Manufacturer",
+    "item.form.model.text" : "Model",
+    "item.form.modelurl.text" : "Model URL",
+    "item.form.modelurl.subtext" : "Manufacturer's URL",
+    "item.form.modelurl.tooltip" : "URL to the manufacturer's page about the model",
+    "item.form.notes.text" : "Notes",
+    "item.form.notes.subtext" : "This field is not exported",
+    "item.form.dimensions.text" : "Dimensions",
+    "item.form.width.text" : "Width",
+    "item.form.height.text" : "Height",
+    "item.form.depth.text" : "Depth",
+    "item.form.volume.text" : "Volume",
+    "item.form.weight.text" : "Weight",
+    "item.form.status.text" : "Status",
+    "item.form.datecreated.text" : "Created",
+    "item.form.datemodified.text" : "Modified",
+
+    "form.select.search.beginswith" : "begins with",
+    "form.select.search.endswith" : "ends with",
+    "form.select.search.equals" : "equals",
+    "form.select.search.contains" : "contains",
+    "form.select.search.regexp" : "regexp",
+
+    "itemstatus.available" : "available",
+    "itemstatus.archived" : "archived",
+    "itemstatus.deleted" : "deleted",
+    "itemstatus.reserved" : "reserved",
+    "itemstatus.sold" : "sold",
+
+    "label.vat" : "VAT",
+
+    "metadata.subtitle.categories" : "Categories",
+    "metadata.form.name" : "Name",
+
+    "settings.title" : "Settings",
+
+    "settings.itemid.text" : "Item ID number",
+    "settings.itemid.subtext" : "Number of digits in ID",
+    "settings.itemid.tooltip" : "The ID number will be 0-padded if shorter than this",
+
+    "settings.resume.text" : "Resume last session on start",
+    "settings.resume.subtext" : "Check this to skip file dialog on start",
+    "settings.resume.tooltip" : "Check this to skip file dialog on start"
+}

@@ -1,0 +1,73 @@
+{
+    "Close" : "Stäng",
+    "Create" : "Skapa",
+    "Create new database" : "Skapa ny databas",
+    "Export" : "Exportera",
+    "Items" : "Föremål",
+    "Journal" : "Journal",
+    "Metadata" : "Metadata",
+    "New" : "Ny",
+    "Open" : "Öppna",
+    "Open existing or create new database?" : "Öppna existerande eller skapa ny databas?",
+    "Open database" : "Öppna databas",
+    "Settings" : "Inställningar",
+    "Wishlist" : "Intresselista",
+
+    "message" : "meddelande",
+    "scroll to new entries" : "rulla till nya inlägg",
+
+    "dialog.save.excel.title" : "Exportera Excel-ark",
+
+    "item.form.itemid.text" : "Artikelnummer",
+    "item.form.name.text" : "Namn",
+    "item.form.category.text" : "Kategori",
+    "item.form.price.text" : "Pris",
+    "item.form.vat.text" : "Moms",
+    "item.form.imgurl.text" : "URL till bild",
+    "item.form.specsurl.text" : "URL till produktblad",
+    "item.form.adddesc.text" : "Tilläggsinformation",
+    "item.form.longdesc.text" : "Beskrivning",
+    "item.form.manufacturer.text" : "Tillverkare",
+    "item.form.model.text" : "Modell",
+    "item.form.modelurl.text" : "URL till modell",
+    "item.form.modelurl.subtext" : "Tillverkarens URL",
+    "item.form.modelurl.tooltip" : "Länk till tillverkarens webbplats",
+    "item.form.notes.text" : "Anmärkningar",
+    "item.form.notes.subtext" : "Detta fält exporteras ej",
+    "item.form.dimensions.text" : "Mått",
+    "item.form.width.text" : "Bredd",
+    "item.form.height.text" : "Höjd",
+    "item.form.depth.text" : "Djup",
+    "item.form.volume.text" : "Volym",
+    "item.form.weight.text" : "Vikt",
+    "item.form.status.text" : "Status",
+    "item.form.datecreated.text" : "Skapad",
+    "item.form.datemodified.text" : "Ändrad",
+
+    "form.select.search.beginswith" : "börjar med",
+    "form.select.search.endswith" : "slutar med",
+    "form.select.search.equals" : "är lika med",
+    "form.select.search.contains" : "innehåller",
+    "form.select.search.regexp" : "regexp",
+
+    "itemstatus.available" : "tillgänglig",
+    "itemstatus.archived" : "arkiverad",
+    "itemstatus.deleted" : "borttagen",
+    "itemstatus.reserved" : "reserverad",
+    "itemstatus.sold" : "såld",
+
+    "label.vat" : "moms",
+
+    "metadata.subtitle.categories" : "Kategorier",
+    "metadata.form.name" : "Namn",
+
+    "settings.title" : "Inställningar",
+    
+    "settings.itemid.text" : "Artikelnummer",
+    "settings.itemid.subtext" : "Antal siffror i nummer",
+    "settings.itemid.tooltip" : "Artikelnumret inleds av nollor för nummer kortare än detta",
+
+    "settings.resume.text" : "Fortsätt föregående session vid start",
+    "settings.resume.subtext" : "settings.resume.subtext",
+    "settings.resume.tooltip" : "settings.resume.tooltip"
+}

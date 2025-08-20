@@ -3,6 +3,6 @@ Website = "https://github.com/assholehoff/UppSpar-DB"
 [Details]
   Icon = "./assets/icon.png"
   Name = "UppSpar DB"
-  ID = "se.antondahlen.UppSparDB"
-  Version = "0.0.2"
-  Build = 5
+  ID = "se.antondahlen.UppSpar-DB"
+  Version = "0.0.4"
+  Build = 34
