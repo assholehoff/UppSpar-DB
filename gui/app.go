@@ -61,6 +61,7 @@ func (a *App) selectDatabase() {
 	var file string
 	var d *dialog.CustomDialog
 	var n, o *dialog.FileDialog
+	file = a.app.Preferences().String("file")
 
 	newFileSaveDialog := func() *dialog.FileDialog {
 		n = dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
@@ -111,14 +112,17 @@ func (a *App) selectDatabase() {
 			n = newFileSaveDialog()
 			n.Show()
 		}),
-		widget.NewButton(lang.L("Open"), func() {
+		widget.NewButton(lang.L("Open")+"...", func() {
 			d.Hide()
 			o = newFileOpenDialog()
 			o.Show()
 		}),
+		widget.NewButton(lang.L("Continue"), func() {
+			d.Hide()
+			a.openDatabase(file)
+		}),
 	})
 
-	file = a.app.Preferences().String("file")
 	_, err := os.Stat(file)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -136,7 +140,6 @@ func (a *App) selectDatabase() {
 	} else {
 		// TODO what is happening here when there are Items in the DB??
 		a.openDatabase(file)
-		// d.Show()
 	}
 }
 

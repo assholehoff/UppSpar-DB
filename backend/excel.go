@@ -7,12 +7,8 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-/* Excel spreadsheet export */
-
+/* Export all items with ItemStatusAvailable */
 func (m *Items) ExportExcel(p string) {
-	msg := fmt.Sprintf("Items.ExportExcel()")
-	log.Println(msg)
-
 	f := excelize.NewFile()
 	defer f.Close()
 	f.Path = p
@@ -26,7 +22,7 @@ func (m *Items) ExportExcel(p string) {
 
 	/* Write R1 headers */
 	if err := sw.SetRow("A1",
-		[]interface{}{
+		[]any{
 			excelize.Cell{Value: "Artikelnummer*"},                 // ItemId           *Obligatoriskt fält*
 			excelize.Cell{Value: "Produktbenämning*"},              // Name             *Obligatoriskt fält*
 			excelize.Cell{Value: "Pris*"},                          // Price            *Obligatoriskt fält*
@@ -98,21 +94,21 @@ func (m *Items) ExportExcel(p string) {
 
 	/* Iterate over items, add each one as a row */
 	for i, id := range ids {
-		row := make([]interface{}, 48)
+		row := make([]any, 48)
 		row[0] = id.String()
-		row[1] = valueOrVoid(id, "Name")     // * obl
-		row[2] = valueOrVoid(id, "Price")    // * obl
-		row[3] = valueOrVoid(id, "Currency") // * obl
-		row[4] = valueOrVoid(id, "QuantityInPrice")
-		row[5] = valueOrVoid(id, "Unit") // * obl
-		row[6] = valueOrVoid(id, "OrderMultiple")
-		row[7] = valueOrVoid(id, "MinOrder")
-		row[8] = valueOrVoid(id, "Vat") // * obl
-		row[9] = valueOrVoid(id, "Eta")
-		row[10] = valueOrVoid(id, "EtaText")
-		row[11] = valueOrVoid(id, "Priority") // * obl returns [Y|N]
+		row[1] = valueOrVoid(id, "Name")            // *Obligatoriskt fält*
+		row[2] = valueOrVoid(id, "Price")           // *Obligatoriskt fält*
+		row[3] = valueOrVoid(id, "Currency")        // *Obligatoriskt fält* SEK
+		row[4] = valueOrVoid(id, "QuantityInPrice") //
+		row[5] = valueOrVoid(id, "Unit")            // *Obligatoriskt fält*
+		row[6] = valueOrVoid(id, "OrderMultiple")   //
+		row[7] = valueOrVoid(id, "MinOrder")        //
+		row[8] = valueOrVoid(id, "Vat")             // *Obligatoriskt fält*
+		row[9] = valueOrVoid(id, "Eta")             //
+		row[10] = valueOrVoid(id, "EtaText")        //
+		row[11] = valueOrVoid(id, "Priority")       // *Obligatoriskt fält* [Y|N]
 		row[12] = valueOrVoid(id, "Stock")
-		row[13] = valueOrVoid(id, "SearchWords") // not in Item table!
+		row[13] = valueOrVoid(id, "SearchWords") // TODO compile from search words list
 		row[14] = valueOrVoid(id, "ImgURL1")
 		row[15] = valueOrVoid(id, "ImgURL2")
 		row[16] = valueOrVoid(id, "ImgURL3")
@@ -126,7 +122,7 @@ func (m *Items) ExportExcel(p string) {
 		row[24] = valueOrVoid(id, "GlobId")
 		row[25] = valueOrVoid(id, "GlobIdType")
 		row[26] = valueOrVoid(id, "ReplacesItem")
-		row[27] = valueOrVoid(id, "SubItemOf") // not in Item table!
+		row[27] = valueOrVoid(id, "SubItemOf") // TODO pull from separate table
 		row[28] = valueOrVoid(id, "Questions")
 		row[29] = valueOrVoid(id, "PackagingCode")
 		row[30] = valueOrVoid(id, "PresentationCode")
