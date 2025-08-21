@@ -729,20 +729,22 @@ type Items struct {
 	j    *journal.Journal
 	data map[ItemID]*Item
 
-	List         binding.UntypedList // ItemID
-	Selection    binding.UntypedList // ItemID
-	SearchString binding.String
-	searchConfig itemSearchConfig
+	ItemIDList          binding.UntypedList // ItemID
+	ItemIDSelection     binding.UntypedList // ItemID
+	ItemNamesUniqueList binding.StringList
+	SearchString        binding.String
+	searchConfig        itemSearchConfig
 }
 
 func NewItems(b *Backend) *Items {
 	m := &Items{
-		db:           b.db,
-		j:            b.Journal,
-		data:         make(map[ItemID]*Item),
-		List:         binding.NewUntypedList(),
-		Selection:    binding.NewUntypedList(),
-		SearchString: binding.NewString(),
+		db:                  b.db,
+		j:                   b.Journal,
+		data:                make(map[ItemID]*Item),
+		ItemIDList:          binding.NewUntypedList(),
+		ItemIDSelection:     binding.NewUntypedList(),
+		SearchString:        binding.NewString(),
+		ItemNamesUniqueList: binding.NewStringList(),
 	}
 	m.SearchString.AddListener(binding.NewDataListener(func() { m.Search() }))
 	return m
@@ -760,21 +762,21 @@ func (m *Items) GetAllItemIDs() {
 		panic(err)
 	}
 	var id ItemID
-	m.List.Set([]any{})
+	m.ItemIDList.Set([]any{})
 	for rows.Next() {
 		rows.Scan(&id)
-		m.List.Append(id)
+		m.ItemIDList.Append(id)
 	}
 }
 func (m *Items) GetItem(id ItemID) *Item {
 	return getItem(be, id)
 }
 func (m *Items) GetItemIDFor(index widget.ListItemID) (ItemID, error) {
-	id, err := m.List.GetValue(index)
+	id, err := m.ItemIDList.GetValue(index)
 	return id.(ItemID), err
 }
 func (m *Items) GetListItemIDFor(id ItemID) (widget.ListItemID, error) {
-	ids, err := m.List.Get()
+	ids, err := m.ItemIDList.Get()
 	if err != nil {
 		panic(err)
 	}
@@ -852,18 +854,18 @@ func (m *Items) DeleteItem(id ItemID) error {
 	}
 	raf, _ := res.RowsAffected()
 	log.Printf("%d rows affected", raf)
-	m.List.Remove(id)
+	m.ItemIDList.Remove(id)
 	delete(m.data, id)
 	return err
 }
 func (m *Items) SelectItem(id ItemID) error {
-	return m.Selection.Append(id)
+	return m.ItemIDSelection.Append(id)
 }
 func (m *Items) UnselectItem(id ItemID) error {
-	return m.Selection.Remove(id)
+	return m.ItemIDSelection.Remove(id)
 }
 func (m *Items) ClearSelection() error {
-	return m.Selection.Set([]any{})
+	return m.ItemIDSelection.Set([]any{})
 }
 func (m *Items) Search() {
 	s, err := m.SearchString.Get()
@@ -895,11 +897,18 @@ func (m *Items) Search() {
 		log.Println(fmt.Errorf("search: statement query failed: %w", err))
 		return
 	}
-	m.List.Set([]any{})
+	m.ItemIDList.Set([]any{})
+	uniqueItemNames := make(map[string]bool)
+	m.ItemNamesUniqueList.Set([]string{})
 	for rows.Next() {
 		var id ItemID
 		rows.Scan(&id)
-		m.List.Append(id)
+		m.ItemIDList.Append(id)
+		name, _ := id.Name()
+		if !uniqueItemNames[name] {
+			uniqueItemNames[name] = true
+			m.ItemNamesUniqueList.Append(name)
+		}
 	}
 }
 func (m *Items) SetSearchConfig(c itemSearchConfig) error {

@@ -67,7 +67,7 @@ func newMetadataView(b *backend.Backend) *metadataView {
 	}
 	m.form = &metadataFormView{
 		entries: &metadataEntries{
-			name: widget.NewEntry(),
+			name: xwidget.NewCompletionEntry([]string{}),
 		},
 		labels: &metadataLabels{
 			name: midget.NewLabel(lang.X("metadata.form.name", "metadata.form.name"), "", ""),

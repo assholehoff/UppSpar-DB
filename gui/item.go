@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	xwidget "fyne.io/x/fyne/widget"
 
 	midget "github.com/assholehoff/fyne-midget"
 )
@@ -51,7 +52,7 @@ func newItemView(a *App) *itemView {
 		d.SetFilter(storage.NewMimeTypeFileFilter([]string{"application/excel"}))
 		return d
 	}
-	data := b.Items.List
+	data := b.Items.ItemIDList
 	createItem := func() fyne.CanvasObject {
 		l := widget.NewLabel("Item name template")
 		return l
@@ -80,7 +81,7 @@ func newItemView(a *App) *itemView {
 		widget.NewToolbarAction(theme.ContentRemoveIcon(), func() {
 			iv.listTools.Items[1].(*widget.ToolbarAction).Disable()
 			go func() {
-				items, err := b.Items.Selection.Get()
+				items, err := b.Items.ItemIDSelection.Get()
 				if err != nil {
 					log.Println(err)
 					return
@@ -89,7 +90,7 @@ func newItemView(a *App) *itemView {
 				for _, item := range items {
 					b.Items.DeleteItem(item.(backend.ItemID))
 				}
-				log.Println(b.Items.Selection)
+				log.Println(b.Items.ItemIDSelection)
 				fyne.Do(func() {
 					time.Sleep(100 * time.Millisecond)
 					iv.listTools.Items[1].(*widget.ToolbarAction).Enable()
@@ -99,13 +100,13 @@ func newItemView(a *App) *itemView {
 		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
 			iv.listTools.Items[2].(*widget.ToolbarAction).Disable()
 			go func() {
-				items, err := b.Items.Selection.Get()
+				items, err := b.Items.ItemIDSelection.Get()
 				if err != nil {
 					log.Println(err)
 					return
 				}
 				iv.list.UnselectAll()
-				log.Println(b.Items.Selection)
+				log.Println(b.Items.ItemIDSelection)
 				var id backend.ItemID
 				for _, item := range items {
 					id, err = b.Items.CopyItem(item.(backend.ItemID))
@@ -146,6 +147,20 @@ func newItemView(a *App) *itemView {
 		b.Items.UnselectItem(i)
 		iv.formView.Clear()
 	}
+	searchEntry := xwidget.NewCompletionEntry([]string{})
+	searchEntry.Bind(b.Items.SearchString)
+	searchEntry.OnChanged = func(s string) {
+		if len(s) < 3 {
+			searchEntry.HideCompletion()
+			return
+		}
+		results, err := b.Items.ItemNamesUniqueList.Get()
+		if err != nil {
+			panic(err)
+		}
+		searchEntry.SetOptions(results)
+		searchEntry.ShowCompletion()
+	}
 	iv.toolbar = container.NewGridWithRows(1,
 		widget.NewToolbar(
 			widget.NewToolbarAction(theme.StorageIcon(), func() {
@@ -174,7 +189,7 @@ func newItemView(a *App) *itemView {
 				b.Items.SetSearchConfig(backend.Equals)
 			}
 		}),
-		widget.NewEntryWithData(b.Items.SearchString),
+		searchEntry,
 	)
 	iv.toolbar.Objects[1].(*widget.Select).SetSelectedIndex(2)
 	imgView := container.NewBorder(nil, nil, nil, nil)
