@@ -1,5 +1,6 @@
 {
     "Close" : "Close",
+    "Continue" : "Continue",
     "Create" : "Create",
     "Create new database" : "Create new database",
     "Export" : "Export",
@@ -10,6 +11,7 @@
     "Open" : "Open",
     "Open existing or create new database?" : "Open existing or create new database?",
     "Open database" : "Open database",
+    "Open last file" : "Open last file",
     "Settings" : "Settings",
     "Wishlist" : "Wishlist",
 
