@@ -31,7 +31,7 @@ func NewJournalEntry(e *journal.Entry) *JournalEntry {
 	// event := e.Event.String()
 	j := &JournalEntry{
 		entry:     e,
-		timestamp: midget.NewLabel("15:04:05", "02-01-2006", ""),
+		timestamp: midget.NewLabel("15:04:05", "2006-01-02", ""),
 		message:   midget.NewLabel(e.Message, level, ""),
 	}
 	j.timestamp.SetTop()
@@ -68,7 +68,7 @@ func (j *JournalEntry) Bind(e *journal.Entry) {
 
 /* Update labels */
 func (j *JournalEntry) Update() {
-	day := j.entry.Time.Format("02-01-2006")
+	day := j.entry.Time.Format("2006-01-02")
 	tid := j.entry.Time.Format("15:04:05")
 	j.timestamp.SetSubtext(day)
 	j.timestamp.SetText(tid)
