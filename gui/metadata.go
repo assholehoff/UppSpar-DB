@@ -13,18 +13,37 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	xwidget "fyne.io/x/fyne/widget"
 	midget "github.com/assholehoff/fyne-midget"
+	ttw "github.com/dweymouth/fyne-tooltip/widget"
 )
 
-type metadataForm struct {
+type metadataChecks struct {
+	price *ttw.Check
+}
+
+type metadataEntries struct {
+	name *xwidget.CompletionEntry
+}
+
+type metadataLabels struct {
+	name *midget.Label
+}
+
+type metadataSelects struct {
+}
+
+type metadataFormView struct {
 	container *fyne.Container
-	nameEntry *widget.Entry
-	nameLabel *midget.Label
+	checks    *struct{}
+	entries   *metadataEntries
+	labels    *metadataLabels
+	selects   *struct{}
 }
 
 type metadataView struct {
 	container *container.Split
-	formView  *metadataForm
+	form      *metadataFormView
 	list      *widget.List
 	toolbar   *widget.Toolbar
 }
@@ -46,23 +65,27 @@ func newMetadataView(b *backend.Backend) *metadataView {
 	m := &metadataView{
 		list: widget.NewListWithData(b.Metadata.CatIDList, createItem, updateItem),
 	}
-	m.formView = &metadataForm{
-		nameEntry: widget.NewEntry(),
-		nameLabel: midget.NewLabel(lang.X("metadata.form.name", "metadata.form.name"), "", ""),
+	m.form = &metadataFormView{
+		entries: &metadataEntries{
+			name: widget.NewEntry(),
+		},
+		labels: &metadataLabels{
+			name: midget.NewLabel(lang.X("metadata.form.name", "metadata.form.name"), "", ""),
+		},
 	}
-	m.formView.container = container.New(layout.NewFormLayout(),
+	m.form.container = container.New(layout.NewFormLayout(),
 		widget.NewRichTextFromMarkdown(
 			`## `+lang.X("metadata.subtitle.categories", "metadata.subtitle.categories"),
 		), layout.NewSpacer(),
-		m.formView.nameLabel, m.formView.nameEntry,
+		m.form.labels.name, m.form.entries.name,
 	)
 	m.list.OnSelected = func(id widget.ListItemID) {
 		b.Metadata.SelectCategory(b.Metadata.GetCatIDFor(id))
-		m.formView.Bind(b, b.Metadata.GetCatIDFor(id))
+		m.form.Bind(b, b.Metadata.GetCatIDFor(id))
 	}
 	m.list.OnUnselected = func(id widget.ListItemID) {
 		b.Metadata.UnselectCategory(b.Metadata.GetCatIDFor(id))
-		m.formView.nameEntry.Unbind()
+		m.form.entries.name.Unbind()
 	}
 	m.toolbar = widget.NewToolbar(
 		widget.NewToolbarAction(theme.ContentAddIcon(), func() {
@@ -97,12 +120,12 @@ func newMetadataView(b *backend.Backend) *metadataView {
 		}),
 	)
 	listView := container.NewBorder(m.toolbar, nil, nil, nil, m.list)
-	m.container = container.NewHSplit(listView, m.formView.container)
+	m.container = container.NewHSplit(listView, m.form.container)
 	m.container.SetOffset(0.25)
 	return m
 }
 
-func (m *metadataForm) Bind(b *backend.Backend, id backend.CatID) {
-	m.nameEntry.Bind(id.Category().Name)
+func (m *metadataFormView) Bind(b *backend.Backend, id backend.CatID) {
+	m.entries.name.Bind(id.Category().Name)
 	id.Category().Name.AddListener(binding.NewDataListener(func() { b.Metadata.UpdateCatList() }))
 }
