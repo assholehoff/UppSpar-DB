@@ -86,12 +86,12 @@ func newItemView(a *App) *itemView {
 					log.Println(err)
 					return
 				}
-				iv.list.UnselectAll()
-				for _, item := range items {
-					b.Items.DeleteItem(item.(backend.ItemID))
-				}
-				log.Println(b.Items.ItemIDSelection)
 				fyne.Do(func() {
+					iv.list.UnselectAll()
+					for _, item := range items {
+						b.Items.DeleteItem(item.(backend.ItemID))
+					}
+					log.Println(b.Items.ItemIDSelection)
 					time.Sleep(100 * time.Millisecond)
 					iv.listTools.Items[1].(*widget.ToolbarAction).Enable()
 				})
@@ -125,6 +125,10 @@ func newItemView(a *App) *itemView {
 				})
 			}()
 		}),
+		widget.NewToolbarAction(theme.StorageIcon(), func() {
+			d := newSaveFileDialog()
+			d.Show()
+		}),
 	)
 
 	iv.list = widget.NewListWithData(data, createItem, updateItem)
@@ -154,50 +158,103 @@ func newItemView(a *App) *itemView {
 			searchEntry.HideCompletion()
 			return
 		}
-		results, err := b.Items.ItemNamesUniqueList.Get()
+		results, err := b.Items.SearchResultUniqueCompletions.Get()
 		if err != nil {
 			panic(err)
 		}
 		searchEntry.SetOptions(results)
 		searchEntry.ShowCompletion()
 	}
-	iv.toolbar = container.NewGridWithRows(1,
-		widget.NewToolbar(
-			widget.NewToolbarAction(theme.StorageIcon(), func() {
-				d := newSaveFileDialog()
-				d.Show()
-			}),
-		),
+	toolbarLeft := container.NewGridWithRows(1,
+		layout.NewSpacer(),
+		widget.NewSelect([]string{
+			lang.X("item.form.name.text", "item.form.name.text"),
+			lang.X("item.form.manufacturer.text", "item.form.manufacturer.text"),
+		}, func(s string) {
+			if s == b.Items.SearchKey().String() {
+				return
+			}
+			switch s {
+			case lang.X("item.form.name.text", "item.form.name.text"):
+				b.Items.SetSearchKey(backend.SearchKeyName)
+			case lang.X("item.form.manufacturer.text", "item.form.manufacturer.text"):
+				b.Items.SetSearchKey(backend.SearchKeyManufacturer)
+			}
+			b.Items.Search()
+		}),
 		widget.NewSelect([]string{
 			lang.X("form.select.search.beginswith", "form.select.search.beginswith"),
 			lang.X("form.select.search.endswith", "form.select.search.endswith"),
 			lang.X("form.select.search.contains", "form.select.search.contains"),
 			lang.X("form.select.search.equals", "form.select.search.equals"),
-			lang.X("form.select.search.regexp", "form.select.search.regexp"),
+			// lang.X("form.select.search.regexp", "form.select.search.regexp"),
 		}, func(s string) {
 			switch s {
 			case lang.X("form.select.search.beginswith", "form.select.search.beginswith"):
 				b.Items.SetSearchConfig(backend.BeginsWith)
 			case lang.X("form.select.search.endswith", "form.select.search.endswith"):
 				b.Items.SetSearchConfig(backend.EndsWith)
+			case lang.X("form.select.search.equals", "form.select.search.equals"):
+				b.Items.SetSearchConfig(backend.Equals)
 			case lang.X("form.select.search.contains", "form.select.search.contains"):
 				b.Items.SetSearchConfig(backend.Contains)
-			case lang.X("form.select.search.regexp", "form.select.search.regexp"):
-				b.Items.SetSearchConfig(backend.RegExp)
+			// case lang.X("form.select.search.regexp", "form.select.search.regexp"):
+			// 	b.Items.SetSearchConfig(backend.RegExp)
 			default:
-				// lang.X("form.select.search.equals", "form.select.search.equals")
-				b.Items.SetSearchConfig(backend.Equals)
+				b.Items.SetSearchConfig(backend.Contains)
 			}
+			b.Items.Search()
 		}),
-		searchEntry,
 	)
-	iv.toolbar.Objects[1].(*widget.Select).SetSelectedIndex(2)
+	toolbarRight := container.NewGridWithRows(1,
+		midget.NewLabel(
+			lang.X("form.select.sortby.text", "form.select.sortby.text"),
+			"",
+			"",
+		),
+		widget.NewSelect([]string{
+			lang.X("form.select.sortby.itemid", "form.select.sortby.itemid"),
+			lang.X("form.select.sortby.name", "form.select.sortby.name"),
+			lang.X("form.select.sortby.manufacturer", "form.select.sortby.manufacturer"),
+			lang.X("form.select.sortby.datecreated", "form.select.sortby.datecreated"),
+			lang.X("form.select.sortby.datemodified", "form.select.sortby.datemodified"),
+		}, func(s string) {
+			switch s {
+			case lang.X("form.select.sortby.itemid", "form.select.sortby.itemid"):
+				b.Items.SetSortKey(backend.SearchKeyItemID)
+			case lang.X("form.select.sortby.name", "form.select.sortby.name"):
+				b.Items.SetSortKey(backend.SearchKeyName)
+			case lang.X("form.select.sortby.manufacturer", "form.select.sortby.manufacturer"):
+				b.Items.SetSortKey(backend.SearchKeyManufacturer)
+			case lang.X("form.select.sortby.datecreated", "form.select.sortby.datecreated"):
+				b.Items.SetSortKey(backend.SearchKeyDateCreated)
+			case lang.X("form.select.sortby.datemodified", "form.select.sortby.datemodified"):
+				b.Items.SetSortKey(backend.SearchKeyDateModified)
+			}
+			b.Items.Search()
+		}),
+		widget.NewSelect([]string{
+			lang.X("form.select.sortorder.ascending", "form.select.sortorder.ascending"),
+			lang.X("form.select.sortorder.descending", "form.select.sortorder.descending"),
+		}, func(s string) {
+			if s == lang.X("form.select.sortorder.ascending", "form.select.sortorder.ascending") {
+				b.Items.SetSortOrder(backend.SortAscending)
+			} else {
+				b.Items.SetSortOrder(backend.SortDescending)
+			}
+			b.Items.Search()
+		}))
+	iv.toolbar = container.NewBorder(nil, nil, toolbarLeft, toolbarRight, searchEntry)
+	toolbarLeft.Objects[1].(*widget.Select).SetSelectedIndex(0)  // search key
+	toolbarLeft.Objects[2].(*widget.Select).SetSelectedIndex(2)  // search type
+	toolbarRight.Objects[1].(*widget.Select).SetSelectedIndex(0) // sort by
+	toolbarRight.Objects[2].(*widget.Select).SetSelectedIndex(0) // sort order
 	imgView := container.NewBorder(nil, nil, nil, nil)
 	listView := container.NewBorder(nil, nil, nil, nil, iv.list)
 	formView := container.NewBorder(nil, nil, nil, imgView, iv.formView.container)
 	split := container.NewHSplit(listView, formView)
 	split.SetOffset(0.25)
-	toolbar := container.NewGridWithRows(1, iv.listTools, iv.toolbar)
+	toolbar := container.NewBorder(nil, nil, iv.listTools, nil, iv.toolbar)
 	statusbar := container.NewGridWithRows(1)
 	iv.container = container.NewBorder(toolbar, statusbar, nil, nil, split)
 

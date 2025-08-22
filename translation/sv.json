@@ -52,6 +52,17 @@
     "form.select.search.contains" : "innehåller",
     "form.select.search.regexp" : "regexp",
 
+    "form.select.sortorder.ascending" : "stigande",
+    "form.select.sortorder.descending" : "fallande",
+
+    "form.select.sortby.text" : "sortera efter",
+
+    "form.select.sortby.itemid" : "artikelnummer",
+    "form.select.sortby.name" : "namn",
+    "form.select.sortby.manufacturer" : "tillverkare",
+    "form.select.sortby.datecreated" : "skapelsedatum",
+    "form.select.sortby.datemodified" : "ändringsdatum",
+
     "itemstatus.available" : "tillgänglig",
     "itemstatus.archived" : "arkiverad",
     "itemstatus.deleted" : "borttagen",

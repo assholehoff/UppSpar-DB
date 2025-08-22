@@ -52,6 +52,17 @@
     "form.select.search.contains" : "contains",
     "form.select.search.regexp" : "regexp",
 
+    "form.select.sortorder.ascending" : "ascending",
+    "form.select.sortorder.descending" : "descending",
+
+    "form.select.sortby.text" : "sort by",
+
+    "form.select.sortby.itemid" : "item ID",
+    "form.select.sortby.name" : "name",
+    "form.select.sortby.manufacturer" : "manufacturer",
+    "form.select.sortby.datecreated" : "date created",
+    "form.select.sortby.datemodified" : "date modified",
+
     "itemstatus.available" : "available",
     "itemstatus.archived" : "archived",
     "itemstatus.deleted" : "deleted",

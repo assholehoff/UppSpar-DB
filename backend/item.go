@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"runtime"
 	"slices"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2/data/binding"
@@ -18,15 +19,56 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type itemSearchConfig int
+type SearchType int
 
 const (
-	BeginsWith itemSearchConfig = iota
+	BeginsWith SearchType = iota
 	EndsWith
 	Contains
 	Equals
 	RegExp
 )
+
+type SearchKey int
+
+const (
+	SearchKeyName SearchKey = iota
+	SearchKeyManufacturer
+	SearchKeyItemID
+	SearchKeyDateCreated
+	SearchKeyDateModified
+)
+
+func (k SearchKey) String() string {
+	switch k {
+	case SearchKeyItemID:
+		return "ItemID"
+	case SearchKeyName:
+		return "Name"
+	case SearchKeyManufacturer:
+		return "Manufacturer"
+	case SearchKeyDateCreated:
+		return "DateCreated"
+	case SearchKeyDateModified:
+		return "DateModified"
+	default:
+		return ""
+	}
+}
+
+type SortOrder int
+
+const (
+	SortAscending SortOrder = iota
+	SortDescending
+)
+
+func (o SortOrder) String() string {
+	if o == SortAscending {
+		return "ASC"
+	}
+	return "DESC"
+}
 
 var (
 	_ sql.Scanner   = (*ItemStatusID)(nil)
@@ -282,13 +324,25 @@ func (id ItemID) Volume() (float64, error) {
 func (id ItemID) Weight() (float64, error) {
 	return id.getFloat("Weight")
 }
+func (id ItemID) LengthUnit() (string, error) {
+	uid, err := id.getInt("LengthUnitID")
+	return UnitID(uid).String(), err
+}
+func (id ItemID) WeightUnit() (string, error) {
+	uid, err := id.getInt("WeightUnitID")
+	return UnitID(uid).String(), err
+}
+func (id ItemID) VolumeUnit() (string, error) {
+	uid, err := id.getInt("VolumeUnitID")
+	return UnitID(uid).String(), err
+}
 func (id ItemID) LengthUnitID() (UnitID, error) {
-	lid, err := id.getInt("LengthUnitID")
-	return UnitID(lid), err
+	uid, err := id.getInt("LengthUnitID")
+	return UnitID(uid), err
 }
 func (id ItemID) VolumeUnitID() (UnitID, error) {
-	vid, err := id.getInt("VolumeUnitID")
-	return UnitID(vid), err
+	uid, err := id.getInt("VolumeUnitID")
+	return UnitID(uid), err
 }
 func (id ItemID) WeightUnitID() (UnitID, error) {
 	uid, err := id.getInt("WeightUnitID")
@@ -729,35 +783,41 @@ type Items struct {
 	j    *journal.Journal
 	data map[ItemID]*Item
 
-	ItemIDList          binding.UntypedList // ItemID
-	ItemIDSelection     binding.UntypedList // ItemID
-	ItemNamesUniqueList binding.StringList
-	SearchString        binding.String
-	searchConfig        itemSearchConfig
+	ItemIDList                    binding.UntypedList
+	ItemIDSelection               binding.UntypedList
+	SearchResultUniqueCompletions binding.StringList
+	SearchString                  binding.String
+	searchType                    SearchType
+	searchKey                     SearchKey
+	sortKey                       SearchKey
+	sortOrder                     SortOrder
 }
 
 func NewItems(b *Backend) *Items {
 	m := &Items{
-		db:                  b.db,
-		j:                   b.Journal,
-		data:                make(map[ItemID]*Item),
-		ItemIDList:          binding.NewUntypedList(),
-		ItemIDSelection:     binding.NewUntypedList(),
-		SearchString:        binding.NewString(),
-		ItemNamesUniqueList: binding.NewStringList(),
+		db:                            b.db,
+		j:                             b.Journal,
+		data:                          make(map[ItemID]*Item),
+		ItemIDList:                    binding.NewUntypedList(),
+		ItemIDSelection:               binding.NewUntypedList(),
+		SearchResultUniqueCompletions: binding.NewStringList(),
+		SearchString:                  binding.NewString(),
+		searchKey:                     SearchKeyName,
+		sortKey:                       SearchKeyItemID,
+		sortOrder:                     SortAscending,
 	}
 	m.SearchString.AddListener(binding.NewDataListener(func() { m.Search() }))
 	return m
 }
 func (m *Items) GetAllItemIDs() {
 	// TODO redo this to fetch all according to current selection/search config, then call after any mod to list
-	query := `SELECT ItemID FROM Item`
+	query := `SELECT ItemID FROM Item WHERE ItemStatusID <> @0`
 	stmt, err := m.db.Prepare(query)
 	if err != nil {
 		panic(err)
 	}
 	defer stmt.Close()
-	rows, err := stmt.Query()
+	rows, err := stmt.Query(ItemStatusDeleted)
 	if err != nil {
 		panic(err)
 	}
@@ -842,13 +902,13 @@ FROM Item WHERE ItemID = @0`
 	return newid, err
 }
 func (m *Items) DeleteItem(id ItemID) error {
-	query := `DELETE FROM Item WHERE ItemID = @0`
+	query := `UPDATE Item SET ItemStatusID = @0 WHERE ItemID = @1`
 	stmt, err := m.db.Prepare(query)
 	if err != nil {
 		return fmt.Errorf("DeleteItem error: %w", err)
 	}
 	defer stmt.Close()
-	res, err := stmt.Exec(id)
+	res, err := stmt.Exec(ItemStatusDeleted, id)
 	if err != nil {
 		return fmt.Errorf("DeleteItem error: %w", err)
 	}
@@ -868,23 +928,24 @@ func (m *Items) ClearSelection() error {
 	return m.ItemIDSelection.Set([]any{})
 }
 func (m *Items) Search() {
-	s, err := m.SearchString.Get()
+	searchString, err := m.SearchString.Get()
 	var query string
-	switch m.searchConfig {
+	searchKey := m.searchKey.String()
+	switch m.searchType {
 	case BeginsWith:
-		s = fmt.Sprintf("%s%%", s)
-		query = `SELECT ItemID FROM Item WHERE Name LIKE @0`
+		searchString = fmt.Sprintf("%s%%", searchString)
+		query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` LIKE @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
 	case EndsWith:
-		s = fmt.Sprintf("%%%s", s)
-		query = `SELECT ItemID FROM Item WHERE Name LIKE @0`
+		searchString = fmt.Sprintf("%%%s", searchString)
+		query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` LIKE @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
 	case Contains:
-		s = fmt.Sprintf("%%%s%%", s)
-		query = `SELECT ItemID FROM Item WHERE Name LIKE @0`
-	case RegExp:
-		query = `SELECT ItemID FROM Item WHERE Name REGEXP @0`
+		searchString = fmt.Sprintf("%%%s%%", searchString)
+		query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` LIKE @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
+	// case RegExp:
+	// 	query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` REGEXP @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
 	default:
 		// Equals
-		query = `SELECT ItemID FROM Item WHERE Name LIKE @0`
+		query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` LIKE @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
 	}
 	stmt, err := m.db.Prepare(query)
 	if err != nil {
@@ -892,33 +953,60 @@ func (m *Items) Search() {
 		return
 	}
 	defer stmt.Close()
-	rows, err := stmt.Query(s)
+
+	clearQuery := strings.Replace(query, "@0", searchString, 1)
+	clearQuery = strings.Replace(clearQuery, "@1", fmt.Sprintf("%d", ItemStatusDeleted), 1)
+	log.Println(clearQuery)
+
+	rows, err := stmt.Query(searchString, ItemStatusDeleted)
 	if err != nil {
 		log.Println(fmt.Errorf("search: statement query failed: %w", err))
 		return
 	}
 	m.ItemIDList.Set([]any{})
-	uniqueItemNames := make(map[string]bool)
-	m.ItemNamesUniqueList.Set([]string{})
+	uniqueResults := make(map[string]bool)
+	m.SearchResultUniqueCompletions.Set([]string{})
 	for rows.Next() {
+		var hit string
 		var id ItemID
 		rows.Scan(&id)
 		m.ItemIDList.Append(id)
-		name, _ := id.Name()
-		if !uniqueItemNames[name] {
-			uniqueItemNames[name] = true
-			m.ItemNamesUniqueList.Append(name)
+		if m.searchKey == SearchKeyName {
+			hit, _ = id.Name()
+		}
+		if m.searchKey == SearchKeyManufacturer {
+			hit, _ = id.Manufacturer()
+		}
+		if !uniqueResults[hit] {
+			uniqueResults[hit] = true
+			m.SearchResultUniqueCompletions.Append(hit)
 		}
 	}
 }
-func (m *Items) SetSearchConfig(c itemSearchConfig) error {
-	m.searchConfig = c
+func (m *Items) SetSearchConfig(c SearchType) error {
+	m.searchType = c
 	return nil
 }
-func (m *Items) SortItems() error {
-	// TODO implementation
-	// TODO by PARAMETER in ORDER
-	panic("unimplemented")
+func (m *Items) SetSearchKey(k SearchKey) error {
+	m.searchKey = k
+	return nil
+}
+func (m *Items) SetSortKey(k SearchKey) error {
+	m.sortKey = k
+	return nil
+}
+func (m *Items) SetSortOrder(o SortOrder) error {
+	m.sortOrder = o
+	return nil
+}
+func (m *Items) SearchKey() SearchKey {
+	return m.searchKey
+}
+func (m *Items) SortKey() SearchKey {
+	return m.sortKey
+}
+func (m *Items) SortOrder() SortOrder {
+	return m.sortOrder
 }
 
 type Item struct {
