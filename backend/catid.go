@@ -127,9 +127,9 @@ func (id CatID) SetName() error {
 
 /* Get the pointer to Category from map or make one and return it */
 func getCategory(b *Backend, id CatID) *Category {
-	if c := b.Metadata.data[id]; c == nil {
+	if c := b.Metadata.categoryData[id]; c == nil {
 		c = newCategory(b, id)
-		b.Metadata.data[id] = c
+		b.Metadata.categoryData[id] = c
 	}
-	return b.Metadata.data[id]
+	return b.Metadata.categoryData[id]
 }

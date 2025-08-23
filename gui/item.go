@@ -284,36 +284,36 @@ type formEntries struct {
 }
 
 type formLabels struct {
-	itemidtitle       *midget.Label
-	itemid            *midget.Label
-	name              *midget.Label
-	category          *midget.Label
-	price             *midget.Label
-	vat               *midget.Label
-	imgurl1           *midget.Label
-	imgurl2           *midget.Label
-	imgurl3           *midget.Label
-	imgurl4           *midget.Label
-	imgurl5           *midget.Label
-	specsurl          *midget.Label
-	adddesctitle      *midget.Label
-	adddesc           *midget.Label
-	longdesc          *midget.Label
-	manufacturer      *midget.Label
-	model             *midget.Label
-	modelurl          *midget.Label
-	notes             *midget.Label
-	dimensions        *midget.Label
-	width             *midget.Label
-	height            *midget.Label
-	depth             *midget.Label
-	volume            *midget.Label
-	weight            *midget.Label
-	status            *midget.Label
-	datecreatedtitle  *midget.Label
-	datemodifiedtitle *midget.Label
-	datecreated       *midget.Label
-	datemodified      *midget.Label
+	itemidtitle       *widget.Label
+	itemid            *widget.Label
+	name              *widget.Label
+	category          *widget.Label
+	price             *widget.Label
+	vat               *widget.Label
+	imgurl1           *widget.Label
+	imgurl2           *widget.Label
+	imgurl3           *widget.Label
+	imgurl4           *widget.Label
+	imgurl5           *widget.Label
+	specsurl          *widget.Label
+	adddesctitle      *widget.Label
+	adddesc           *widget.Label
+	longdesc          *widget.Label
+	manufacturer      *widget.Label
+	model             *widget.Label
+	modelurl          *widget.Label
+	notes             *widget.Label
+	dimensions        *widget.Label
+	width             *widget.Label
+	height            *widget.Label
+	depth             *widget.Label
+	volume            *widget.Label
+	weight            *widget.Label
+	status            *widget.Label
+	datecreatedtitle  *widget.Label
+	datemodifiedtitle *widget.Label
+	datecreated       *widget.Label
+	datemodified      *widget.Label
 }
 
 type formSelects struct {
@@ -386,38 +386,36 @@ func newFormView(b *backend.Backend) *formView {
 			weight:       widget.NewEntry(),
 		},
 		labels: &formLabels{
-			itemidtitle:  midget.NewLabel(lang.X("item.form.itemid.text", "item.form.itemid.text"), "", ""),
-			itemid:       midget.NewLabel("0000000000", "", ""),
-			name:         midget.NewLabel(lang.X("item.form.name.text", "item.form.name.text"), "", ""),
-			category:     midget.NewLabel(lang.X("item.form.category.text", "item.form.category.text"), "", ""),
-			price:        midget.NewLabel(lang.X("item.form.price.text", "item.form.price.text"), "", ""),
-			vat:          midget.NewLabel(lang.X("item.form.vat.text", "item.form.vat.text"), "", ""),
-			imgurl1:      midget.NewLabel(lang.X("item.form.imgurl.text", "item.form.imgurl.text"), "", ""),
-			imgurl2:      midget.NewLabel(lang.X("item.form.imgurl.text", "item.form.imgurl.text"), "", ""),
-			imgurl3:      midget.NewLabel(lang.X("item.form.imgurl.text", "item.form.imgurl.text"), "", ""),
-			imgurl4:      midget.NewLabel(lang.X("item.form.imgurl.text", "item.form.imgurl.text"), "", ""),
-			imgurl5:      midget.NewLabel(lang.X("item.form.imgurl.text", "item.form.imgurl.text"), "", ""),
-			specsurl:     midget.NewLabel(lang.X("item.form.specsurl.text", "item.form.specsurl.text"), "", ""),
-			adddesctitle: midget.NewLabel(lang.X("item.form.adddesc.text", "item.form.adddesc.text"), "", ""),
-			adddesc:      midget.NewLabel(lang.X("item.form.adddesc.text", "item.form.adddesc.text"), "", ""),
-			longdesc:     midget.NewLabel(lang.X("item.form.longdesc.text", "item.form.longdesc.text"), "", ""),
-			manufacturer: midget.NewLabel(lang.X("item.form.manufacturer.text", "item.form.manufacturer.text"), "", ""),
-			model:        midget.NewLabel(lang.X("item.form.model.text", "item.form.model.text"), "", ""),
-			modelurl:     midget.NewLabel(lang.X("item.form.modelurl.text", "item.form.modelurl.text"), "", ""),
-			notes: midget.NewLabel(lang.X("item.form.notes.text", "item.form.notes.text"),
-				lang.X("item.form.notes.subtext", "item.form.notes.subtext"),
-				""),
-			dimensions:        midget.NewLabel(lang.X("item.form.dimensions.text", "item.form.dimensions.text"), "", ""),
-			width:             midget.NewLabel(lang.X("item.form.width.text", "item.form.width.text"), "", ""),
-			height:            midget.NewLabel(lang.X("item.form.height.text", "item.form.height.text"), "", ""),
-			depth:             midget.NewLabel(lang.X("item.form.depth.text", "item.form.depth.text"), "", ""),
-			volume:            midget.NewLabel(lang.X("item.form.volume.text", "item.form.volume.text"), "", ""),
-			weight:            midget.NewLabel(lang.X("item.form.weight.text", "item.form.weight.text"), "", ""),
-			status:            midget.NewLabel(lang.X("item.form.status.text", "item.form.status.text"), "", ""),
-			datecreatedtitle:  midget.NewLabel(lang.X("item.form.datecreated.text", "item.form.datecreated.text"), "", ""),
-			datemodifiedtitle: midget.NewLabel(lang.X("item.form.datemodified.text", "item.form.datemodified.text"), "", ""),
-			datecreated:       midget.NewLabel(time.DateTime, "", ""),
-			datemodified:      midget.NewLabel(time.DateTime, "", ""),
+			itemidtitle:       widget.NewLabel(lang.X("item.form.itemid.text", "item.form.itemid.text")),
+			itemid:            widget.NewLabel("0000000000"),
+			name:              widget.NewLabel(lang.X("item.form.name.text", "item.form.name.text")),
+			category:          widget.NewLabel(lang.X("item.form.category.text", "item.form.category.text")),
+			price:             widget.NewLabel(lang.X("item.form.price.text", "item.form.price.text")),
+			vat:               widget.NewLabel(lang.X("item.form.vat.text", "item.form.vat.text")),
+			imgurl1:           widget.NewLabel(lang.X("item.form.imgurl.text", "item.form.imgurl.text")),
+			imgurl2:           widget.NewLabel(lang.X("item.form.imgurl.text", "item.form.imgurl.text")),
+			imgurl3:           widget.NewLabel(lang.X("item.form.imgurl.text", "item.form.imgurl.text")),
+			imgurl4:           widget.NewLabel(lang.X("item.form.imgurl.text", "item.form.imgurl.text")),
+			imgurl5:           widget.NewLabel(lang.X("item.form.imgurl.text", "item.form.imgurl.text")),
+			specsurl:          widget.NewLabel(lang.X("item.form.specsurl.text", "item.form.specsurl.text")),
+			adddesctitle:      widget.NewLabel(lang.X("item.form.adddesc.text", "item.form.adddesc.text")),
+			adddesc:           widget.NewLabel(lang.X("item.form.adddesc.text", "item.form.adddesc.text")),
+			longdesc:          widget.NewLabel(lang.X("item.form.longdesc.text", "item.form.longdesc.text")),
+			manufacturer:      widget.NewLabel(lang.X("item.form.manufacturer.text", "item.form.manufacturer.text")),
+			model:             widget.NewLabel(lang.X("item.form.model.text", "item.form.model.text")),
+			modelurl:          widget.NewLabel(lang.X("item.form.modelurl.text", "item.form.modelurl.text")),
+			notes:             widget.NewLabel(lang.X("item.form.notes.text", "item.form.notes.text")),
+			dimensions:        widget.NewLabel(lang.X("item.form.dimensions.text", "item.form.dimensions.text")),
+			width:             widget.NewLabel(lang.X("item.form.width.text", "item.form.width.text")),
+			height:            widget.NewLabel(lang.X("item.form.height.text", "item.form.height.text")),
+			depth:             widget.NewLabel(lang.X("item.form.depth.text", "item.form.depth.text")),
+			volume:            widget.NewLabel(lang.X("item.form.volume.text", "item.form.volume.text")),
+			weight:            widget.NewLabel(lang.X("item.form.weight.text", "item.form.weight.text")),
+			status:            widget.NewLabel(lang.X("item.form.status.text", "item.form.status.text")),
+			datecreatedtitle:  widget.NewLabel(lang.X("item.form.datecreated.text", "item.form.datecreated.text")),
+			datemodifiedtitle: widget.NewLabel(lang.X("item.form.datemodified.text", "item.form.datemodified.text")),
+			datecreated:       widget.NewLabel(time.DateTime),
+			datemodified:      widget.NewLabel(time.DateTime),
 		},
 		selects: &formSelects{
 			category:   widget.NewSelect(categories, func(s string) {}),
@@ -432,10 +430,9 @@ func newFormView(b *backend.Backend) *formView {
 		v.selects.category.Options = categories
 		v.selects.category.Refresh()
 	}))
-	v.labels.notes.VerticalAlignment = midget.AlignTop
-	v.entries.adddesc.MultiLine = true
-	v.entries.adddesc.SetMinRowsVisible(2)
-	v.entries.adddesc.Wrapping = fyne.TextWrapWord
+	// v.entries.adddesc.MultiLine = true
+	// v.entries.adddesc.SetMinRowsVisible(2)
+	// v.entries.adddesc.Wrapping = fyne.TextWrapWord
 	v.entries.longdesc.MultiLine = true
 	v.entries.longdesc.SetMinRowsVisible(5)
 	v.entries.longdesc.Wrapping = fyne.TextWrapWord
@@ -462,13 +459,17 @@ func newFormView(b *backend.Backend) *formView {
 		v.labels.manufacturer, v.entries.manufacturer,
 		v.labels.model, v.entries.model,
 		v.labels.modelurl, v.entries.modelurl,
-		v.labels.longdesc, v.entries.longdesc,
+		// v.labels.longdesc, v.entries.longdesc,
 		v.labels.dimensions, spacebox,
 		layout.NewSpacer(), massbox,
 		v.labels.price, container.NewBorder(nil, nil, nil, midget.NewLabel("SEK", "", ""), v.entries.price),
-		v.labels.adddesc, v.entries.adddesc,
+		// v.labels.adddesc, v.entries.adddesc,
 		v.labels.imgurl1, v.entries.imgurl1,
 		v.labels.notes, v.entries.notes,
+		layout.NewSpacer(), widget.NewLabel(" "),
+		layout.NewSpacer(), widget.NewRichTextFromMarkdown(`### `+lang.L("Preview")),
+		v.labels.longdesc, layout.NewSpacer(),
+		v.labels.adddesctitle, v.labels.adddesc,
 	)
 	v.Clear()
 	return v
@@ -478,17 +479,18 @@ func (v formView) Bind(id backend.ItemID) {
 	v.Clear()
 	v.Enable()
 
-	v.labels.itemid.BindText(id.Item().ItemIDString)
-	v.labels.status.BindText(id.Item().ItemStatus)
-	v.labels.datecreated.BindText(id.Item().DateCreated)
-	v.labels.datemodified.BindText(id.Item().DateModified)
+	v.labels.itemid.Bind(id.Item().ItemIDString)
+	v.labels.status.Bind(id.Item().ItemStatus)
+	v.labels.datecreated.Bind(id.Item().DateCreated)
+	v.labels.datemodified.Bind(id.Item().DateModified)
+	v.labels.adddesc.Bind(id.Item().AddDesc)
 
 	v.entries.name.Bind(id.Item().Name)
 	v.entries.price.Bind(id.Item().PriceString)
 	v.entries.vat.Bind(id.Item().VatString)
 	v.entries.imgurl1.Bind(id.Item().ImgURL1)
 	v.entries.specsurl.Bind(id.Item().SpecsURL)
-	v.entries.adddesc.Bind(id.Item().AddDesc)
+	// v.entries.adddesc.Bind(id.Item().AddDesc)
 	v.entries.longdesc.Bind(id.Item().LongDesc)
 	v.entries.manufacturer.Bind(id.Item().Manufacturer)
 	v.entries.model.Bind(id.Item().Model)
@@ -512,7 +514,7 @@ func (v formView) Clear() {
 	v.entries.vat.Unbind()
 	v.entries.imgurl1.Unbind()
 	v.entries.specsurl.Unbind()
-	v.entries.adddesc.Unbind()
+	// v.entries.adddesc.Unbind()
 	v.entries.longdesc.Unbind()
 	v.entries.manufacturer.Unbind()
 	v.entries.model.Unbind()
@@ -524,10 +526,11 @@ func (v formView) Clear() {
 	v.entries.volume.Unbind()
 	v.entries.weight.Unbind()
 
-	v.labels.itemid.UnbindText()
-	v.labels.status.UnbindText()
-	v.labels.datecreated.UnbindText()
-	v.labels.datemodified.UnbindText()
+	v.labels.itemid.Unbind()
+	v.labels.status.Unbind()
+	v.labels.datecreated.Unbind()
+	v.labels.datemodified.Unbind()
+	v.labels.adddesc.Unbind()
 
 	v.selects.category.Unbind()
 	v.selects.lengthunit.Unbind()
@@ -540,7 +543,7 @@ func (v formView) Clear() {
 	v.entries.vat.SetText("")
 	v.entries.imgurl1.SetText("")
 	v.entries.specsurl.SetText("")
-	v.entries.adddesc.SetText("")
+	// v.entries.adddesc.SetText("")
 	v.entries.longdesc.SetText("")
 	v.entries.manufacturer.SetText("")
 	v.entries.model.SetText("")
@@ -557,6 +560,7 @@ func (v formView) Clear() {
 	v.labels.status.SetText("")
 	v.labels.datecreated.SetText("")
 	v.labels.datemodified.SetText("")
+	v.labels.adddesc.SetText("")
 
 	v.selects.category.ClearSelected()
 	v.selects.lengthunit.ClearSelected()
@@ -573,7 +577,7 @@ func (v formView) Disable() {
 	v.entries.vat.Disable()
 	v.entries.imgurl1.Disable()
 	v.entries.specsurl.Disable()
-	v.entries.adddesc.Disable()
+	// v.entries.adddesc.Disable()
 	v.entries.longdesc.Disable()
 	v.entries.manufacturer.Disable()
 	v.entries.model.Disable()
@@ -597,7 +601,7 @@ func (v formView) Enable() {
 	v.entries.vat.Enable()
 	v.entries.imgurl1.Enable()
 	v.entries.specsurl.Enable()
-	v.entries.adddesc.Enable()
+	// v.entries.adddesc.Enable()
 	v.entries.longdesc.Enable()
 	v.entries.manufacturer.Enable()
 	v.entries.model.Enable()

@@ -464,7 +464,7 @@ func (id ItemID) CompileAddDesc() error {
 }
 
 func (id ItemID) CompileLongDesc() error {
-
+	panic("unimplemented")
 }
 
 /* Updating data */
@@ -1139,15 +1139,15 @@ func newItem(b *Backend, id ItemID) *Item {
 	t.Model.AddListener(binding.NewDataListener(func() { t.ItemID.SetModel() }))
 	t.ModelURL.AddListener(binding.NewDataListener(func() { t.ItemID.SetModelURL() }))
 	t.Notes.AddListener(binding.NewDataListener(func() { t.ItemID.SetNotes() }))
-	t.widthFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetWidth() }))
-	t.heightFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetHeight() }))
-	t.depthFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetDepth() }))
-	t.volumeFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetVolume() }))
-	t.weightFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetWeight() }))
-	t.LengthUnit.AddListener(binding.NewDataListener(func() { t.ItemID.SetLengthUnit() }))
-	t.VolumeUnit.AddListener(binding.NewDataListener(func() { t.ItemID.SetVolumeUnit() }))
-	t.WeightUnit.AddListener(binding.NewDataListener(func() { t.ItemID.SetWeightUnit() }))
-	t.ItemStatus.AddListener(binding.NewDataListener(func() { t.ItemID.SetItemStatus() }))
+	t.widthFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetWidth(); t.ItemID.CompileAddDesc() }))
+	t.heightFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetHeight(); t.ItemID.CompileAddDesc() }))
+	t.depthFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetDepth(); t.ItemID.CompileAddDesc() }))
+	t.volumeFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetVolume(); t.ItemID.CompileAddDesc() }))
+	t.weightFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetWeight(); t.ItemID.CompileAddDesc() }))
+	t.LengthUnit.AddListener(binding.NewDataListener(func() { t.ItemID.SetLengthUnit(); t.ItemID.CompileAddDesc() }))
+	t.VolumeUnit.AddListener(binding.NewDataListener(func() { t.ItemID.SetVolumeUnit(); t.ItemID.CompileAddDesc() }))
+	t.WeightUnit.AddListener(binding.NewDataListener(func() { t.ItemID.SetWeightUnit(); t.ItemID.CompileAddDesc() }))
+	t.ItemStatus.AddListener(binding.NewDataListener(func() { t.ItemID.SetItemStatus(); t.ItemID.CompileAddDesc() }))
 	return t
 }
 

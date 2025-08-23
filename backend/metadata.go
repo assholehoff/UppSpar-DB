@@ -9,11 +9,19 @@ import (
 )
 
 type Metadata struct {
-	b    *Backend
-	data map[CatID]*Category
+	b            *Backend
+	categoryData map[CatID]*Category
+	mfrData      map[MfrID]*Mfr
+	modelData    map[ModelID]*Model
 
-	selection binding.UntypedList
-	CatIDList binding.UntypedList
+	catSelection binding.UntypedList
+	CatIDList    binding.UntypedList
+
+	mfrSelection binding.UntypedList
+	MfrIDList    binding.UntypedList
+
+	modelSelection binding.UntypedList
+	ModelIDList    binding.UntypedList
 
 	UnitIDList       binding.UntypedList
 	ItemStatusIDList binding.UntypedList
@@ -21,10 +29,17 @@ type Metadata struct {
 
 func NewMetadata(b *Backend) *Metadata {
 	return &Metadata{
-		b:                b,
-		data:             make(map[CatID]*Category),
-		selection:        binding.NewUntypedList(),
+		b:              b,
+		categoryData:   make(map[CatID]*Category),
+		mfrData:        make(map[MfrID]*Mfr),
+		modelData:      make(map[ModelID]*Model),
+		catSelection:   binding.NewUntypedList(),
+		mfrSelection:   binding.NewUntypedList(),
+		modelSelection: binding.NewUntypedList(),
+
 		CatIDList:        binding.NewUntypedList(),
+		MfrIDList:        binding.NewUntypedList(),
+		ModelIDList:      binding.NewUntypedList(),
 		UnitIDList:       binding.NewUntypedList(),
 		ItemStatusIDList: binding.NewUntypedList(),
 	}
@@ -46,7 +61,7 @@ func (m *Metadata) CreateNewCategory() error {
 }
 func (m *Metadata) CopyCategory() error {
 	// TODO consider looping through selection slice
-	sid, err := m.selection.GetValue(0)
+	sid, err := m.catSelection.GetValue(0)
 	if err != nil {
 		return fmt.Errorf("Metadata.CopyCategory() error: %w", err)
 	}
@@ -68,7 +83,7 @@ func (m *Metadata) CopyCategory() error {
 }
 func (m *Metadata) DeleteCategory() error {
 	// TODO consider looping through selection slice
-	sid, err := m.selection.GetValue(0)
+	sid, err := m.catSelection.GetValue(0)
 	if err != nil {
 		return fmt.Errorf("Metadata.DeleteCategory() error: %w", err)
 	}
@@ -99,14 +114,14 @@ func (m *Metadata) GetCatIDFor(index widget.ListItemID) CatID {
 }
 func (m *Metadata) SelectCategory(id CatID) error {
 	log.Printf("adding %d to selection slice", id)
-	return m.selection.Append(id)
+	return m.catSelection.Append(id)
 }
 func (m *Metadata) UnselectCategory(id CatID) error {
 	log.Printf("removing %d from selection slice", id)
-	return m.selection.Remove(id)
+	return m.catSelection.Remove(id)
 }
 func (m *Metadata) ClearSelection() error {
-	return m.selection.Set([]any{})
+	return m.catSelection.Set([]any{})
 }
 func (m *Metadata) UpdateCatList() error {
 	// TODO
