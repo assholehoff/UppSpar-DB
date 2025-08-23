@@ -294,6 +294,9 @@ func (id ItemID) ImgURL5() (string, error) {
 func (id ItemID) SpecsURL() (string, error) {
 	return id.getString("SpecsURL")
 }
+func (id ItemID) AddDesc() (string, error) {
+	return id.getString("AddDesc")
+}
 func (id ItemID) LongDesc() (string, error) {
 	return id.getString("LongDesc")
 }
@@ -428,6 +431,40 @@ func getItemIDValue[T sql.NullBool | sql.NullFloat64 | NullInt | sql.NullInt64 |
 		panic(err)
 	}
 	return
+}
+
+/* Compiling data from multiple cells */
+
+func (id ItemID) CompileAddDesc() error {
+	var addDesc, u string
+	var w, h, d, v float64
+	w, _ = id.Width()
+	h, _ = id.Height()
+	d, _ = id.Depth()
+	u, _ = id.LengthUnit()
+	if w > 0 || h > 0 || d > 0 {
+		addDesc += fmt.Sprintf("Mått: %.0fx%.0fx%.0f %s\n", w, h, d, u)
+	}
+	v, _ = id.Volume()
+	u, _ = id.VolumeUnit()
+	if v > 0 {
+		addDesc += fmt.Sprintf("Volym: %.2f %s\n", v, u)
+	}
+	w, _ = id.Weight()
+	u, _ = id.WeightUnit()
+	if w > 0 {
+		addDesc += fmt.Sprintf("Vikt: %.2f %s\n", w, u)
+	}
+	n, _ := id.Notes()
+	if n != "" {
+		addDesc += fmt.Sprintf("Anmärkningar: %s\n", n)
+	}
+	id.Item().AddDesc.Set(addDesc)
+	return id.SetAddDesc()
+}
+
+func (id ItemID) CompileLongDesc() error {
+
 }
 
 /* Updating data */

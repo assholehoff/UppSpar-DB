@@ -46,76 +46,79 @@ VALUES ("ItemIDWidth", "7")`)
 	if !slices.Contains(tables, "Item") {
 		log.Printf("!slices.Contains(tables \"Item\")")
 		b.db.Exec(`CREATE TABLE Item(
-ItemID                  INTEGER PRIMARY KEY AUTOINCREMENT,
-Name                    TEXT DEFAULT 'Nytt föremål',
-Price                   REAL DEFAULT 0,
-Currency                TEXT DEFAULT 'SEK',
-QuantityInPrice         REAL DEFAULT 1,
-Unit                    TEXT DEFAULT 'st',
-OrderMultiple           REAL DEFAULT 0,
-MinOrder                REAL DEFAULT 0,
-Vat                     REAL DEFAULT 0,
-Eta                     INT DEFAULT 0,
-EtaText                 TEXT DEFAULT '',
-Priority                BOOL DEFAULT true,
-Stock                   REAL DEFAULT 1,
-ImgURL1                 TEXT DEFAULT '',
-ImgURL2                 TEXT DEFAULT '',
-ImgURL3                 TEXT DEFAULT '',
-ImgURL4                 TEXT DEFAULT '',
-ImgURL5                 TEXT DEFAULT '',
-SpecsURL                TEXT DEFAULT '',
-UNSPSC                  TEXT DEFAULT '',
-LongDesc                TEXT DEFAULT '',
-Manufacturer            TEXT DEFAULT '',
-MfrItemId               TEXT DEFAULT '',
-GlobId                  TEXT DEFAULT '',
-GlobIdType              TEXT DEFAULT '',
-ReplacesItem            INT DEFAULT 0,
-Questions               TEXT DEFAULT '',
-PackagingCode           BOOL DEFAULT false,
-PresentationCode        BOOL DEFAULT false,
-DeliveryAutoSign        BOOL DEFAULT false,
-DeliveryOption          BOOL DEFAULT false,
-ComparePrice            REAL DEFAULT 0,
-CompareUnit             TEXT DEFAULT '',
-CompareQuantityInPrice  REAL DEFAULT 0,
-PriceInfo               TEXT DEFAULT '',
-AddDesc                 TEXT DEFAULT '',
-ProcFlow                TEXT DEFAULT '',
-InnerUnit               TEXT DEFAULT '',
-QuantityInUnit          REAL DEFAULT 0,
-RiskClassification      TEXT DEFAULT '',
-Comment                 TEXT DEFAULT '',
-EnvClassification       TEXT DEFAULT '',
-FormId                  TEXT DEFAULT '',
-Article                 TEXT DEFAULT '',
-Attachments             BOOL DEFAULT false,
-ItemGroup               TEXT DEFAULT '',
---
-Model                   TEXT DEFAULT '',
-ModelURL                TEXT DEFAULT '',
-Notes                   TEXT DEFAULT '',
-Width                   REAL DEFAULT 0,
-Height                  REAL DEFAULT 0,
-Depth                   REAL DEFAULT 0,
-Volume                  REAL DEFAULT 0,
-Weight                  REAL DEFAULT 0,
-LengthUnitID            INT DEFAULT 2,
-VolumeUnitID            INT DEFAULT 11,
-WeightUnitID            INT DEFAULT 7,
-CatID                   INT DEFAULT 1,
-GroupID                 INT DEFAULT 0,
-StorageID               INT DEFAULT 0,
-ItemStatusID            INT DEFAULT 1,
-DateCreated             TEXT DEFAULT(datetime('now', 'subsec')),
-DateModified            TEXT DEFAULT(datetime('now', 'subsec')),
-FOREIGN KEY(LengthUnitID) REFERENCES Metric(UnitID),
-FOREIGN KEY(VolumeUnitID) REFERENCES Metric(UnitID),
-FOREIGN KEY(WeightUnitID) REFERENCES Metric(UnitID),
-FOREIGN KEY(CatID) REFERENCES Category(CatID),
-FOREIGN KEY(GroupID) REFERENCES Item_Group(GroupID),
-FOREIGN KEY(ItemStatusID) REFERENCES ItemStatus(ItemStatusID),
+-- Proceedo defined column names --
+ItemID                  INTEGER PRIMARY KEY AUTOINCREMENT, 
+Name                    TEXT DEFAULT 'Nytt föremål', 
+Price                   REAL DEFAULT 0, 
+Currency                TEXT DEFAULT 'SEK', 
+QuantityInPrice         REAL DEFAULT 1, 
+Unit                    TEXT DEFAULT 'st', 
+OrderMultiple           REAL DEFAULT 0, 
+MinOrder                REAL DEFAULT 0, 
+Vat                     REAL DEFAULT 0, 
+Eta                     INT DEFAULT 0, 
+EtaText                 TEXT DEFAULT '', 
+Priority                BOOL DEFAULT true, 
+Stock                   REAL DEFAULT 1, 
+ImgURL1                 TEXT DEFAULT '', 
+ImgURL2                 TEXT DEFAULT '', 
+ImgURL3                 TEXT DEFAULT '', 
+ImgURL4                 TEXT DEFAULT '', 
+ImgURL5                 TEXT DEFAULT '', 
+SpecsURL                TEXT DEFAULT '', 
+UNSPSC                  TEXT DEFAULT '', 
+LongDesc                TEXT DEFAULT '', 
+Manufacturer            TEXT DEFAULT '', 
+MfrItemId               TEXT DEFAULT '', 
+GlobId                  TEXT DEFAULT '', 
+GlobIdType              TEXT DEFAULT '', 
+ReplacesItem            INT DEFAULT 0, 
+Questions               TEXT DEFAULT '', 
+PackagingCode           BOOL DEFAULT false, 
+PresentationCode        BOOL DEFAULT false, 
+DeliveryAutoSign        BOOL DEFAULT false, 
+DeliveryOption          BOOL DEFAULT false, 
+ComparePrice            REAL DEFAULT 0, 
+CompareUnit             TEXT DEFAULT '', 
+CompareQuantityInPrice  REAL DEFAULT 0, 
+PriceInfo               TEXT DEFAULT '', 
+AddDesc                 TEXT DEFAULT '', 
+ProcFlow                TEXT DEFAULT '', 
+InnerUnit               TEXT DEFAULT '', 
+QuantityInUnit          REAL DEFAULT 0, 
+RiskClassification      TEXT DEFAULT '', 
+Comment                 TEXT DEFAULT '', 
+EnvClassification       TEXT DEFAULT '', 
+FormId                  TEXT DEFAULT '', 
+Article                 TEXT DEFAULT '', 
+Attachments             BOOL DEFAULT false, 
+ItemGroup               TEXT DEFAULT '', 
+-- Custom defined fields --
+ModelID                 INT DEFAULT 0, 
+MfrID                   INT DEFAULT 0, 
+Notes                   TEXT DEFAULT '', 
+Width                   REAL DEFAULT 0, 
+Height                  REAL DEFAULT 0, 
+Depth                   REAL DEFAULT 0, 
+Volume                  REAL DEFAULT 0, 
+Weight                  REAL DEFAULT 0, 
+LengthUnitID            INT DEFAULT 2, 
+VolumeUnitID            INT DEFAULT 11, 
+WeightUnitID            INT DEFAULT 7, 
+CatID                   INT DEFAULT 1, 
+GroupID                 INT DEFAULT 0, 
+StorageID               INT DEFAULT 0, 
+ItemStatusID            INT DEFAULT 1, 
+DateCreated             TEXT DEFAULT(datetime('now', 'subsec')), 
+DateModified            TEXT DEFAULT(datetime('now', 'subsec')), 
+FOREIGN KEY(MfrID) REFERENCES Manufacturer(MfrID), 
+FOREIGN KEY(ModelID) REFERENCES Model(ModelID), 
+FOREIGN KEY(LengthUnitID) REFERENCES Metric(UnitID), 
+FOREIGN KEY(VolumeUnitID) REFERENCES Metric(UnitID), 
+FOREIGN KEY(WeightUnitID) REFERENCES Metric(UnitID), 
+FOREIGN KEY(CatID) REFERENCES Category(CatID), 
+FOREIGN KEY(GroupID) REFERENCES Item_Group(GroupID), 
+FOREIGN KEY(ItemStatusID) REFERENCES ItemStatus(ItemStatusID), 
 FOREIGN KEY(StorageID) REFERENCES Storage(StorageID))`)
 		b.db.Exec(`CREATE TRIGGER UpdateDateModified
 AFTER UPDATE ON Item FOR EACH ROW
@@ -174,29 +177,31 @@ Article                 TEXT,
 Attachments             BOOL,
 ItemGroup               TEXT,
 --
-Model                   TEXT,
-ModelURL                TEXT,
-Notes                   TEXT,
-Width                   REAL,
-Height                  REAL,
-Depth                   REAL,
-Volume                  REAL,
-Weight                  REAL,
-LengthUnitID            INT,
-VolumeUnitID            INT,
-WeightUnitID            INT,
-CatID                   INT,
-GroupID                 INT,
-StorageID               INT,
-ItemStatusID            INT,
-DateCreated             TEXT DEFAULT(datetime('now', 'subsec')),
-DateModified            TEXT DEFAULT(datetime('now', 'subsec')),
-FOREIGN KEY(LengthUnitID) REFERENCES Metric(UnitID),
-FOREIGN KEY(VolumeUnitID) REFERENCES Metric(UnitID),
-FOREIGN KEY(WeightUnitID) REFERENCES Metric(UnitID),
-FOREIGN KEY(CatID) REFERENCES Category(CatID),
-FOREIGN KEY(GroupID) REFERENCES Item_Group(GroupID),
-FOREIGN KEY(ItemStatusID) REFERENCES ItemStatus(ItemStatusID),
+MfrID                   INT,
+ModelID                 INT,
+Notes                   TEXT, 
+Width                   REAL, 
+Height                  REAL, 
+Depth                   REAL, 
+Volume                  REAL, 
+Weight                  REAL, 
+LengthUnitID            INT, 
+VolumeUnitID            INT, 
+WeightUnitID            INT, 
+CatID                   INT, 
+GroupID                 INT, 
+StorageID               INT, 
+ItemStatusID            INT, 
+DateCreated             TEXT DEFAULT(datetime('now', 'subsec')), 
+DateModified            TEXT DEFAULT(datetime('now', 'subsec')), 
+FOREIGN KEY(MfrID) REFERENCES Manufacturer(MfrID), 
+FOREIGN KEY(ModelID) REFERENCES Model(ModelID), 
+FOREIGN KEY(LengthUnitID) REFERENCES Metric(UnitID), 
+FOREIGN KEY(VolumeUnitID) REFERENCES Metric(UnitID), 
+FOREIGN KEY(WeightUnitID) REFERENCES Metric(UnitID), 
+FOREIGN KEY(CatID) REFERENCES Category(CatID), 
+FOREIGN KEY(GroupID) REFERENCES Item_Group(GroupID), 
+FOREIGN KEY(ItemStatusID) REFERENCES ItemStatus(ItemStatusID), 
 FOREIGN KEY(StorageID) REFERENCES Storage(StorageID))`)
 		b.db.Exec(`CREATE TRIGGER Temp_UpdateDateModified
 AFTER UPDATE ON Temp_Item FOR EACH ROW
@@ -226,18 +231,18 @@ Name TEXT)`)
 		log.Printf("!slices.Contains(tables \"Item_Function\")")
 		b.db.Exec(`CREATE TABLE Item_Function(
 ItemID INT,
-FuncId INT,
+FuncID INT,
 IsTested BOOL,
 IsWorking BOOL,
 Comment TEXT,
 FOREIGN KEY(ItemID) REFERENCES Item(ItemID) ON DELETE CASCADE, 
-FOREIGN KEY(FuncId) REFERENCES Function_Data(FuncId))`)
+FOREIGN KEY(FuncID) REFERENCES Function_Data(FuncID))`)
 		touched = true
 	}
 	if !slices.Contains(tables, "Function_Data") {
 		log.Printf("!slices.Contains(tables \"Function_Data\")")
 		b.db.Exec(`CREATE TABLE Function_Data(
-FuncId INTEGER PRIMARY KEY AUTOINCREMENT,
+FuncID INTEGER PRIMARY KEY AUTOINCREMENT,
 Name TEXT)`)
 		touched = true
 	}
@@ -248,6 +253,32 @@ ItemStatusID INTEGER PRIMARY KEY AUTOINCREMENT,
 Name TEXT)`)
 		b.db.Exec(`INSERT INTO ItemStatus (Name) 
 VALUES ("available"), ("sold"), ("archived"), ("deleted")`)
+		touched = true
+	}
+	if !slices.Contains(tables, "Manufacturer") {
+		log.Printf("!slices.Contains(tables \"Manufacturer\")")
+		b.db.Exec(`CREATE TABLE Manufacturer(
+MfrID INTEGER PRIMARY KEY AUTOINCREMENT,
+Name TEXT DEFAULT '')`)
+		b.db.Exec(`INSERT INTO Manufacturer (Name) 
+VALUES ("UppSpar"), ("IKEA"), ("Kinnarps")`)
+		touched = true
+	}
+	if !slices.Contains(tables, "Model") {
+		log.Printf("!slices.Contains(tables \"Model\")")
+		b.db.Exec(`CREATE TABLE Model(
+ModelID INTEGER PRIMARY KEY AUTOINCREMENT,
+Name TEXT DEFAULT '',
+MfrID INT DEFAULT 0,
+Descr TEXT DEFAULT '',
+ImgURL1 TEXT DEFAULT '',
+ImgURL2 TEXT DEFAULT '',
+ImgURL3 TEXT DEFAULT '',
+ImgURL4 TEXT DEFAULT '',
+ImgURL5 TEXT DEFAULT '',
+SpecsURL TEXT DEFAULT '',
+ModelURL TEXT DEFAULT ''
+FOREIGN KEY(MfrID) REFERENCES Manufacturer(MfrID))`)
 		touched = true
 	}
 
@@ -277,10 +308,10 @@ FOREIGN KEY(CatID) REFERENCES Category(CatID) ON DELETE CASCADE)`)
 
 	if !slices.Contains(tables, "Image") {
 		b.db.Exec(`CREATE TABLE Image(
-ImgId INTEGER PRIMARY KEY AUTOINCREMENT,
+ImgID INTEGER PRIMARY KEY AUTOINCREMENT,
 ImgData BLOB,
 ImgThumb BLOB,
-ImgUrl TEXT)`)
+ImgURL TEXT)`)
 		touched = true
 	}
 
@@ -294,15 +325,15 @@ ImgUrl TEXT)`)
 		log.Printf("!slices.Contains(tables \"SearchWords_Association\")")
 		b.db.Exec(`CREATE TABLE SearchWords_Association(
 ItemID INT,
-WordId INT,
-FOREIGN KEY(ItemID) REFERENCES SearchWords_Vocabulary(WordId) ON DELETE CASCADE,
-FOREIGN KEY(WordId) REFERENCES Item(ItemID))`)
+WordID INT,
+FOREIGN KEY(ItemID) REFERENCES SearchWords_Vocabulary(WordID) ON DELETE CASCADE,
+FOREIGN KEY(WordID) REFERENCES Item(ItemID))`)
 		touched = true
 	}
 	if !slices.Contains(tables, "SearchWords_Vocabulary") {
 		log.Printf("!slices.Contains(tables \"SearchWords_Vocabulary\")")
 		b.db.Exec(`CREATE TABLE SearchWords_Vocabulary(
-WordId INTEGER PRIMARY KEY,
+WordID INTEGER PRIMARY KEY,
 WordString TEXT)`)
 		touched = true
 	}

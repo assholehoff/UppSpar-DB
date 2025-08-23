@@ -271,7 +271,6 @@ type formEntries struct {
 	imgurl4      *widget.Entry
 	imgurl5      *widget.Entry
 	specsurl     *widget.Entry
-	adddesc      *widget.Entry
 	longdesc     *widget.Entry
 	manufacturer *widget.Entry
 	model        *widget.Entry
@@ -297,6 +296,7 @@ type formLabels struct {
 	imgurl4           *midget.Label
 	imgurl5           *midget.Label
 	specsurl          *midget.Label
+	adddesctitle      *midget.Label
 	adddesc           *midget.Label
 	longdesc          *midget.Label
 	manufacturer      *midget.Label
@@ -374,7 +374,6 @@ func newFormView(b *backend.Backend) *formView {
 			imgurl4:      widget.NewEntry(),
 			imgurl5:      widget.NewEntry(),
 			specsurl:     widget.NewEntry(),
-			adddesc:      widget.NewEntry(),
 			longdesc:     widget.NewEntry(),
 			manufacturer: widget.NewEntry(),
 			model:        widget.NewEntry(),
@@ -399,6 +398,7 @@ func newFormView(b *backend.Backend) *formView {
 			imgurl4:      midget.NewLabel(lang.X("item.form.imgurl.text", "item.form.imgurl.text"), "", ""),
 			imgurl5:      midget.NewLabel(lang.X("item.form.imgurl.text", "item.form.imgurl.text"), "", ""),
 			specsurl:     midget.NewLabel(lang.X("item.form.specsurl.text", "item.form.specsurl.text"), "", ""),
+			adddesctitle: midget.NewLabel(lang.X("item.form.adddesc.text", "item.form.adddesc.text"), "", ""),
 			adddesc:      midget.NewLabel(lang.X("item.form.adddesc.text", "item.form.adddesc.text"), "", ""),
 			longdesc:     midget.NewLabel(lang.X("item.form.longdesc.text", "item.form.longdesc.text"), "", ""),
 			manufacturer: midget.NewLabel(lang.X("item.form.manufacturer.text", "item.form.manufacturer.text"), "", ""),

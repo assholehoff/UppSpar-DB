@@ -193,36 +193,11 @@ func valueOrVoid(id ItemID, key string) (val any) {
 	case "SpecsURL":
 		val, _ = id.SpecsURL()
 	case "LongDesc":
-		// TODO this should compile from various form data
-		var longDesc string
-		val = longDesc
+		val, _ = id.LongDesc()
 	case "Manufacturer":
 		val, _ = id.Manufacturer()
 	case "AddDesc":
-		var addDesc, u string
-		var w, h, d, v float64
-		w, _ = id.Width()
-		h, _ = id.Height()
-		d, _ = id.Depth()
-		u, _ = id.LengthUnit()
-		if w > 0 || h > 0 || d > 0 {
-			addDesc += fmt.Sprintf("Mått: %.0fx%.0fx%.0f %s\n", w, h, d, u)
-		}
-		v, _ = id.Volume()
-		u, _ = id.VolumeUnit()
-		if v > 0 {
-			addDesc += fmt.Sprintf("Volym: %.2f %s\n", v, u)
-		}
-		w, _ = id.Weight()
-		u, _ = id.WeightUnit()
-		if w > 0 {
-			addDesc += fmt.Sprintf("Vikt: %.2f %s\n", w, u)
-		}
-		n, _ := id.Notes()
-		if n != "" {
-			addDesc += fmt.Sprintf("Anmärkningar: %s\n", n)
-		}
-		val = addDesc
+		val, _ = id.AddDesc()
 	default:
 		return
 	}
