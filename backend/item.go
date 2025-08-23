@@ -33,7 +33,9 @@ type SearchKey int
 
 const (
 	SearchKeyName SearchKey = iota
+	SearchKeyDescr
 	SearchKeyManufacturer
+	SearchKeyModel
 	SearchKeyItemID
 	SearchKeyDateCreated
 	SearchKeyDateModified
@@ -45,8 +47,12 @@ func (k SearchKey) String() string {
 		return "ItemID"
 	case SearchKeyName:
 		return "Name"
+	case SearchKeyDescr:
+		return "Descr"
 	case SearchKeyManufacturer:
 		return "Manufacturer"
+	case SearchKeyModel:
+		return "Model"
 	case SearchKeyDateCreated:
 		return "DateCreated"
 	case SearchKeyDateModified:
@@ -464,7 +470,35 @@ func (id ItemID) CompileAddDesc() error {
 }
 
 func (id ItemID) CompileLongDesc() error {
-	panic("unimplemented")
+	var longDesc string
+	n := false
+	addStringToLine := func(s string, e error) {
+		if e != nil {
+			log.Println(e)
+		}
+		if s != "" {
+			longDesc += fmt.Sprintf("%s ", s)
+			n = true
+		}
+	}
+	addNewlines := func(i int) {
+		if n {
+			for range i {
+				longDesc += "\n"
+			}
+			n = false
+		}
+	}
+	/* Manufacturer and model */
+	addStringToLine(id.Manufacturer())
+	addStringToLine(id.Model())
+	addNewlines(1)
+	addStringToLine(id.Name())
+	addNewlines(2)
+	addStringToLine(id.Notes())
+
+	id.Item().LongDesc.Set(longDesc)
+	return id.SetLongDesc()
 }
 
 /* Updating data */
@@ -978,6 +1012,7 @@ func (m *Items) Search() {
 	case Contains:
 		searchString = fmt.Sprintf("%%%s%%", searchString)
 		query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` LIKE @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
+	// TODO (maybe) fix RegEx
 	// case RegExp:
 	// 	query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` REGEXP @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
 	default:
@@ -1094,8 +1129,8 @@ type Item struct {
 	dateModified time.Time
 	DateCreated  binding.String
 	DateModified binding.String
-	Condition    map[string]any // TODO fix this
-	Properties   map[string]any // TODO fix this
+	Condition    map[string]any // TODO implement this
+	Properties   map[string]any // TODO implement this
 	touched      bool
 }
 
@@ -1117,37 +1152,38 @@ func newItem(b *Backend, id ItemID) *Item {
 	t.VolumeString = binding.FloatToStringWithFormat(t.volumeFloat, "%.2f")
 	t.WeightString = binding.FloatToStringWithFormat(t.weightFloat, "%.2f")
 
-	t.Name.AddListener(binding.NewDataListener(func() { t.ItemID.SetName(); b.Items.Search() }))
-	t.Category.AddListener(binding.NewDataListener(func() { t.ItemID.SetCategory() }))
-	t.priceFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetPrice() }))
-	t.Currency.AddListener(binding.NewDataListener(func() { t.ItemID.SetCurrency() }))
-	t.Unit.AddListener(binding.NewDataListener(func() { t.ItemID.SetUnit() }))
-	t.vatFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetVat() }))
-	t.Priority.AddListener(binding.NewDataListener(func() { t.ItemID.SetPriority() }))
-	t.stockFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetStock() }))
+	t.Name.AddListener(binding.NewDataListener(func() { t.ItemID.SetName(); b.Items.Search(); t.ItemID.CompileLongDesc() }))
+	t.Category.AddListener(binding.NewDataListener(func() { t.ItemID.SetCategory(); t.ItemID.CompileLongDesc() }))
+	t.priceFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetPrice(); t.ItemID.CompileLongDesc() }))
+	t.Currency.AddListener(binding.NewDataListener(func() { t.ItemID.SetCurrency(); t.ItemID.CompileLongDesc() }))
+	t.Unit.AddListener(binding.NewDataListener(func() { t.ItemID.SetUnit(); t.ItemID.CompileLongDesc() }))
+	t.vatFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetVat(); t.ItemID.CompileLongDesc() }))
+	t.Priority.AddListener(binding.NewDataListener(func() { t.ItemID.SetPriority(); t.ItemID.CompileLongDesc() }))
+	t.stockFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetStock(); t.ItemID.CompileLongDesc() }))
+	t.ImgURL1.AddListener(binding.NewDataListener(func() { t.ItemID.SetImgURL1(); t.ItemID.CompileLongDesc() }))
+	t.ImgURL2.AddListener(binding.NewDataListener(func() { t.ItemID.SetImgURL2(); t.ItemID.CompileLongDesc() }))
+	t.ImgURL3.AddListener(binding.NewDataListener(func() { t.ItemID.SetImgURL3(); t.ItemID.CompileLongDesc() }))
+	t.ImgURL4.AddListener(binding.NewDataListener(func() { t.ItemID.SetImgURL4(); t.ItemID.CompileLongDesc() }))
+	t.ImgURL5.AddListener(binding.NewDataListener(func() { t.ItemID.SetImgURL5(); t.ItemID.CompileLongDesc() }))
+	t.SpecsURL.AddListener(binding.NewDataListener(func() { t.ItemID.SetSpecsURL(); t.ItemID.CompileLongDesc() }))
+	t.AddDesc.AddListener(binding.NewDataListener(func() { t.ItemID.SetAddDesc(); t.ItemID.CompileLongDesc() }))
+	t.LongDesc.AddListener(binding.NewDataListener(func() { t.ItemID.SetLongDesc(); t.ItemID.CompileLongDesc() }))
+	t.Manufacturer.AddListener(binding.NewDataListener(func() { t.ItemID.SetManufacturer(); t.ItemID.CompileLongDesc() }))
+	t.Model.AddListener(binding.NewDataListener(func() { t.ItemID.SetModel(); t.ItemID.CompileLongDesc() }))
+	t.ModelURL.AddListener(binding.NewDataListener(func() { t.ItemID.SetModelURL(); t.ItemID.CompileLongDesc() }))
+	t.Notes.AddListener(binding.NewDataListener(func() { t.ItemID.SetNotes(); t.ItemID.CompileLongDesc() }))
+	t.widthFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetWidth(); t.ItemID.CompileAddDesc(); t.ItemID.CompileLongDesc() }))
+	t.heightFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetHeight(); t.ItemID.CompileAddDesc(); t.ItemID.CompileLongDesc() }))
+	t.depthFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetDepth(); t.ItemID.CompileAddDesc(); t.ItemID.CompileLongDesc() }))
+	t.volumeFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetVolume(); t.ItemID.CompileAddDesc(); t.ItemID.CompileLongDesc() }))
+	t.weightFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetWeight(); t.ItemID.CompileAddDesc(); t.ItemID.CompileLongDesc() }))
+	t.LengthUnit.AddListener(binding.NewDataListener(func() { t.ItemID.SetLengthUnit(); t.ItemID.CompileAddDesc(); t.ItemID.CompileLongDesc() }))
+	t.VolumeUnit.AddListener(binding.NewDataListener(func() { t.ItemID.SetVolumeUnit(); t.ItemID.CompileAddDesc(); t.ItemID.CompileLongDesc() }))
+	t.WeightUnit.AddListener(binding.NewDataListener(func() { t.ItemID.SetWeightUnit(); t.ItemID.CompileAddDesc(); t.ItemID.CompileLongDesc() }))
+	t.ItemStatus.AddListener(binding.NewDataListener(func() { t.ItemID.SetItemStatus(); t.ItemID.CompileAddDesc(); t.ItemID.CompileLongDesc() }))
+
 	// TODO implement SearchWords
-	// t.SearchWords.AddListener(binding.NewDataListener(func() { panic("SearchWords unimplemented") }))
-	t.ImgURL1.AddListener(binding.NewDataListener(func() { t.ItemID.SetImgURL1() }))
-	t.ImgURL2.AddListener(binding.NewDataListener(func() { t.ItemID.SetImgURL2() }))
-	t.ImgURL3.AddListener(binding.NewDataListener(func() { t.ItemID.SetImgURL3() }))
-	t.ImgURL4.AddListener(binding.NewDataListener(func() { t.ItemID.SetImgURL4() }))
-	t.ImgURL5.AddListener(binding.NewDataListener(func() { t.ItemID.SetImgURL5() }))
-	t.SpecsURL.AddListener(binding.NewDataListener(func() { t.ItemID.SetSpecsURL() }))
-	t.AddDesc.AddListener(binding.NewDataListener(func() { t.ItemID.SetAddDesc() }))
-	t.LongDesc.AddListener(binding.NewDataListener(func() { t.ItemID.SetLongDesc() }))
-	t.Manufacturer.AddListener(binding.NewDataListener(func() { t.ItemID.SetManufacturer() }))
-	t.Model.AddListener(binding.NewDataListener(func() { t.ItemID.SetModel() }))
-	t.ModelURL.AddListener(binding.NewDataListener(func() { t.ItemID.SetModelURL() }))
-	t.Notes.AddListener(binding.NewDataListener(func() { t.ItemID.SetNotes() }))
-	t.widthFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetWidth(); t.ItemID.CompileAddDesc() }))
-	t.heightFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetHeight(); t.ItemID.CompileAddDesc() }))
-	t.depthFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetDepth(); t.ItemID.CompileAddDesc() }))
-	t.volumeFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetVolume(); t.ItemID.CompileAddDesc() }))
-	t.weightFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetWeight(); t.ItemID.CompileAddDesc() }))
-	t.LengthUnit.AddListener(binding.NewDataListener(func() { t.ItemID.SetLengthUnit(); t.ItemID.CompileAddDesc() }))
-	t.VolumeUnit.AddListener(binding.NewDataListener(func() { t.ItemID.SetVolumeUnit(); t.ItemID.CompileAddDesc() }))
-	t.WeightUnit.AddListener(binding.NewDataListener(func() { t.ItemID.SetWeightUnit(); t.ItemID.CompileAddDesc() }))
-	t.ItemStatus.AddListener(binding.NewDataListener(func() { t.ItemID.SetItemStatus(); t.ItemID.CompileAddDesc() }))
+
 	return t
 }
 

@@ -262,66 +262,75 @@ func newItemView(a *App) *itemView {
 }
 
 type formEntries struct {
-	name         *widget.Entry
-	price        *widget.Entry
-	vat          *widget.Entry
-	imgurl1      *widget.Entry
-	imgurl2      *widget.Entry
-	imgurl3      *widget.Entry
-	imgurl4      *widget.Entry
-	imgurl5      *widget.Entry
-	specsurl     *widget.Entry
-	longdesc     *widget.Entry
-	manufacturer *widget.Entry
-	model        *widget.Entry
-	modelurl     *widget.Entry
-	notes        *widget.Entry
-	width        *widget.Entry
-	height       *widget.Entry
-	depth        *widget.Entry
-	volume       *widget.Entry
-	weight       *widget.Entry
+	Name         *widget.Entry
+	Price        *widget.Entry
+	Vat          *widget.Entry
+	ImgURL1      *widget.Entry
+	ImgURL2      *widget.Entry
+	ImgURL3      *widget.Entry
+	ImgURL4      *widget.Entry
+	ImgURL5      *widget.Entry
+	SpecsURL     *widget.Entry
+	LongDesc     *widget.Entry
+	Manufacturer *widget.Entry
+	Model        *widget.Entry
+	ModelURL     *widget.Entry
+	Notes        *widget.Entry
+	Width        *widget.Entry
+	Height       *widget.Entry
+	Depth        *widget.Entry
+	Volume       *widget.Entry
+	Weight       *widget.Entry
+}
+
+type formDataLabels struct {
+	ItemID       *widget.Label
+	AddDesc      *widget.Label
+	LongDesc     *widget.Label
+	DateCreated  *widget.Label
+	DateModified *widget.Label
 }
 
 type formLabels struct {
-	itemidtitle       *widget.Label
-	itemid            *widget.Label
-	name              *widget.Label
-	category          *widget.Label
-	price             *widget.Label
-	vat               *widget.Label
-	imgurl1           *widget.Label
-	imgurl2           *widget.Label
-	imgurl3           *widget.Label
-	imgurl4           *widget.Label
-	imgurl5           *widget.Label
-	specsurl          *widget.Label
-	adddesctitle      *widget.Label
-	adddesc           *widget.Label
-	longdesc          *widget.Label
-	manufacturer      *widget.Label
-	model             *widget.Label
-	modelurl          *widget.Label
-	notes             *widget.Label
-	dimensions        *widget.Label
-	width             *widget.Label
-	height            *widget.Label
-	depth             *widget.Label
-	volume            *widget.Label
-	weight            *widget.Label
-	status            *widget.Label
-	datecreatedtitle  *widget.Label
-	datemodifiedtitle *widget.Label
-	datecreated       *widget.Label
-	datemodified      *widget.Label
+	ItemID        *widget.Label
+	itemid        *widget.Label
+	Name          *widget.Label
+	Category      *widget.Label
+	Price         *widget.Label
+	Vat           *widget.Label
+	ImgURL1       *widget.Label
+	ImgURL2       *widget.Label
+	ImgURL3       *widget.Label
+	ImgURL4       *widget.Label
+	ImgURL5       *widget.Label
+	SpecsURL      *widget.Label
+	AddDesc       *widget.Label
+	LongDesc      *widget.Label
+	Manufacturer  *widget.Label
+	Model         *widget.Label
+	ModelDescr    *widget.Label
+	ModelURL      *widget.Label
+	Notes         *widget.Label
+	Descr         *widget.Label
+	Dimensions    *widget.Label
+	Width         *widget.Label
+	Height        *widget.Label
+	Depth         *widget.Label
+	Volume        *widget.Label
+	Weight        *widget.Label
+	Status        *widget.Label
+	DateCreated   *widget.Label
+	DateModified  *widget.Label
+	Condition     *widget.Label
+	Functionality *widget.Label
 }
 
 type formSelects struct {
-	category   *widget.Select
-	lengthunit *widget.Select
-	volumeunit *widget.Select
-	weightunit *widget.Select
-	status     *widget.Select
+	Category   *widget.Select
+	LengthUnit *widget.Select
+	VolumeUnit *widget.Select
+	WeightUnit *widget.Select
+	Status     *widget.Select
 }
 
 type formView struct {
@@ -329,6 +338,7 @@ type formView struct {
 	entries   *formEntries
 	selects   *formSelects
 	labels    *formLabels
+	values    *formDataLabels
 }
 
 func newFormView(b *backend.Backend) *formView {
@@ -365,111 +375,115 @@ func newFormView(b *backend.Backend) *formView {
 
 	v := &formView{
 		entries: &formEntries{
-			name:         widget.NewEntry(),
-			price:        widget.NewEntry(),
-			vat:          widget.NewEntry(),
-			imgurl1:      widget.NewEntry(),
-			imgurl2:      widget.NewEntry(),
-			imgurl3:      widget.NewEntry(),
-			imgurl4:      widget.NewEntry(),
-			imgurl5:      widget.NewEntry(),
-			specsurl:     widget.NewEntry(),
-			longdesc:     widget.NewEntry(),
-			manufacturer: widget.NewEntry(),
-			model:        widget.NewEntry(),
-			modelurl:     widget.NewEntry(),
-			notes:        widget.NewEntry(),
-			width:        widget.NewEntry(),
-			height:       widget.NewEntry(),
-			depth:        widget.NewEntry(),
-			volume:       widget.NewEntry(),
-			weight:       widget.NewEntry(),
+			Name:         widget.NewEntry(),
+			Price:        widget.NewEntry(),
+			Vat:          widget.NewEntry(),
+			ImgURL1:      widget.NewEntry(),
+			ImgURL2:      widget.NewEntry(),
+			ImgURL3:      widget.NewEntry(),
+			ImgURL4:      widget.NewEntry(),
+			ImgURL5:      widget.NewEntry(),
+			SpecsURL:     widget.NewEntry(),
+			LongDesc:     widget.NewEntry(),
+			Manufacturer: widget.NewEntry(),
+			Model:        widget.NewEntry(),
+			ModelURL:     widget.NewEntry(),
+			Notes:        widget.NewEntry(),
+			Width:        widget.NewEntry(),
+			Height:       widget.NewEntry(),
+			Depth:        widget.NewEntry(),
+			Volume:       widget.NewEntry(),
+			Weight:       widget.NewEntry(),
 		},
 		labels: &formLabels{
-			itemidtitle:       widget.NewLabel(lang.X("item.form.itemid.text", "item.form.itemid.text")),
-			itemid:            widget.NewLabel("0000000000"),
-			name:              widget.NewLabel(lang.X("item.form.name.text", "item.form.name.text")),
-			category:          widget.NewLabel(lang.X("item.form.category.text", "item.form.category.text")),
-			price:             widget.NewLabel(lang.X("item.form.price.text", "item.form.price.text")),
-			vat:               widget.NewLabel(lang.X("item.form.vat.text", "item.form.vat.text")),
-			imgurl1:           widget.NewLabel(lang.X("item.form.imgurl.text", "item.form.imgurl.text")),
-			imgurl2:           widget.NewLabel(lang.X("item.form.imgurl.text", "item.form.imgurl.text")),
-			imgurl3:           widget.NewLabel(lang.X("item.form.imgurl.text", "item.form.imgurl.text")),
-			imgurl4:           widget.NewLabel(lang.X("item.form.imgurl.text", "item.form.imgurl.text")),
-			imgurl5:           widget.NewLabel(lang.X("item.form.imgurl.text", "item.form.imgurl.text")),
-			specsurl:          widget.NewLabel(lang.X("item.form.specsurl.text", "item.form.specsurl.text")),
-			adddesctitle:      widget.NewLabel(lang.X("item.form.adddesc.text", "item.form.adddesc.text")),
-			adddesc:           widget.NewLabel(lang.X("item.form.adddesc.text", "item.form.adddesc.text")),
-			longdesc:          widget.NewLabel(lang.X("item.form.longdesc.text", "item.form.longdesc.text")),
-			manufacturer:      widget.NewLabel(lang.X("item.form.manufacturer.text", "item.form.manufacturer.text")),
-			model:             widget.NewLabel(lang.X("item.form.model.text", "item.form.model.text")),
-			modelurl:          widget.NewLabel(lang.X("item.form.modelurl.text", "item.form.modelurl.text")),
-			notes:             widget.NewLabel(lang.X("item.form.notes.text", "item.form.notes.text")),
-			dimensions:        widget.NewLabel(lang.X("item.form.dimensions.text", "item.form.dimensions.text")),
-			width:             widget.NewLabel(lang.X("item.form.width.text", "item.form.width.text")),
-			height:            widget.NewLabel(lang.X("item.form.height.text", "item.form.height.text")),
-			depth:             widget.NewLabel(lang.X("item.form.depth.text", "item.form.depth.text")),
-			volume:            widget.NewLabel(lang.X("item.form.volume.text", "item.form.volume.text")),
-			weight:            widget.NewLabel(lang.X("item.form.weight.text", "item.form.weight.text")),
-			status:            widget.NewLabel(lang.X("item.form.status.text", "item.form.status.text")),
-			datecreatedtitle:  widget.NewLabel(lang.X("item.form.datecreated.text", "item.form.datecreated.text")),
-			datemodifiedtitle: widget.NewLabel(lang.X("item.form.datemodified.text", "item.form.datemodified.text")),
-			datecreated:       widget.NewLabel(time.DateTime),
-			datemodified:      widget.NewLabel(time.DateTime),
+			ItemID:       widget.NewLabel(lang.X("item.form.itemid.text", "item.form.itemid.text")),
+			itemid:       widget.NewLabel("0000000000"),
+			Name:         widget.NewLabel(lang.X("item.form.label.name", "item.form.label.name")),
+			Category:     widget.NewLabel(lang.X("item.form.label.category", "item.form.label.category")),
+			Price:        widget.NewLabel(lang.X("item.form.label.price", "item.form.label.price")),
+			Vat:          widget.NewLabel(lang.X("item.form.label.vat", "item.form.label.vat")),
+			ImgURL1:      widget.NewLabel(lang.X("item.form.label.imgurl", "item.form.label.imgurl")),
+			ImgURL2:      widget.NewLabel(lang.X("item.form.label.imgurl", "item.form.label.imgurl")),
+			ImgURL3:      widget.NewLabel(lang.X("item.form.label.imgurl", "item.form.label.imgurl")),
+			ImgURL4:      widget.NewLabel(lang.X("item.form.label.imgurl", "item.form.label.imgurl")),
+			ImgURL5:      widget.NewLabel(lang.X("item.form.label.imgurl", "item.form.label.imgurl")),
+			SpecsURL:     widget.NewLabel(lang.X("item.form.label.specsurl", "item.form.label.specsurl")),
+			AddDesc:      widget.NewLabel(lang.X("item.form.label.adddesc", "item.form.label.adddesc")),
+			LongDesc:     widget.NewLabel(lang.X("item.form.label.longdesc", "item.form.label.longdesc")),
+			Manufacturer: widget.NewLabel(lang.X("item.form.label.manufacturer", "item.form.label.manufacturer")),
+			Model:        widget.NewLabel(lang.X("item.form.label.model", "item.form.label.model")),
+			ModelURL:     widget.NewLabel(lang.X("item.form.label.modelurl", "item.form.label.modelurl")),
+			Notes:        widget.NewLabel(lang.X("item.form.label.notes", "item.form.label.notes")),
+			Dimensions:   widget.NewLabel(lang.X("item.form.label.dimensions", "item.form.label.dimensions")),
+			Width:        widget.NewLabel(lang.X("item.form.label.width", "item.form.label.width")),
+			Height:       widget.NewLabel(lang.X("item.form.label.height", "item.form.label.height")),
+			Depth:        widget.NewLabel(lang.X("item.form.label.depth", "item.form.label.depth")),
+			Volume:       widget.NewLabel(lang.X("item.form.label.volume", "item.form.label.volume")),
+			Weight:       widget.NewLabel(lang.X("item.form.label.weight", "item.form.label.weight")),
+			Status:       widget.NewLabel(lang.X("item.form.label.status", "item.form.label.status")),
+			DateCreated:  widget.NewLabel(lang.X("item.form.label.datecreated", "item.form.label.datecreated")),
+			DateModified: widget.NewLabel(lang.X("item.form.label.datemodified", "item.form.label.datemodified")),
+		},
+		values: &formDataLabels{
+			ItemID:       widget.NewLabel(lang.X("item.form.data.itemid", "item.form.data.itemid")),
+			AddDesc:      widget.NewLabel(lang.X("item.form.data.adddesc", "item.form.data.adddesc")),
+			LongDesc:     widget.NewLabel(lang.X("item.form.data.longdesc", "item.form.data.longdesc")),
+			DateCreated:  widget.NewLabel(lang.X("item.form.data.datecreated", "item.form.data.datecreated")),
+			DateModified: widget.NewLabel(lang.X("item.form.data.datemodified", "item.form.data.datemodified")),
 		},
 		selects: &formSelects{
-			category:   widget.NewSelect(categories, func(s string) {}),
-			lengthunit: widget.NewSelect(lengthUnits, func(s string) {}),
-			volumeunit: widget.NewSelect(volumeUnits, func(s string) {}),
-			weightunit: widget.NewSelect(weightUnits, func(s string) {}),
-			status:     widget.NewSelect(itemStatus, func(s string) {}),
+			Category:   widget.NewSelect(categories, func(s string) {}),
+			LengthUnit: widget.NewSelect(lengthUnits, func(s string) {}),
+			VolumeUnit: widget.NewSelect(volumeUnits, func(s string) {}),
+			WeightUnit: widget.NewSelect(weightUnits, func(s string) {}),
+			Status:     widget.NewSelect(itemStatus, func(s string) {}),
 		},
 	}
 	b.Metadata.CatIDList.AddListener(binding.NewDataListener(func() {
 		categories = fetchCategories()
-		v.selects.category.Options = categories
-		v.selects.category.Refresh()
+		v.selects.Category.Options = categories
+		v.selects.Category.Refresh()
 	}))
 	// v.entries.adddesc.MultiLine = true
 	// v.entries.adddesc.SetMinRowsVisible(2)
 	// v.entries.adddesc.Wrapping = fyne.TextWrapWord
-	v.entries.longdesc.MultiLine = true
-	v.entries.longdesc.SetMinRowsVisible(5)
-	v.entries.longdesc.Wrapping = fyne.TextWrapWord
-	v.entries.notes.MultiLine = true
-	v.entries.notes.SetMinRowsVisible(5)
-	v.entries.notes.Wrapping = fyne.TextWrapWord
+	v.entries.LongDesc.MultiLine = true
+	v.entries.LongDesc.SetMinRowsVisible(5)
+	v.entries.LongDesc.Wrapping = fyne.TextWrapWord
+	v.entries.Notes.MultiLine = true
+	v.entries.Notes.SetMinRowsVisible(5)
+	v.entries.Notes.Wrapping = fyne.TextWrapWord
 	spacebox := container.NewGridWithRows(1,
-		container.NewBorder(nil, nil, v.labels.width, nil, v.entries.width),
-		container.NewBorder(nil, nil, v.labels.height, nil, v.entries.height),
-		container.NewBorder(nil, nil, v.labels.depth, nil, v.entries.depth),
-		v.selects.lengthunit,
+		container.NewBorder(nil, nil, v.labels.Width, nil, v.entries.Width),
+		container.NewBorder(nil, nil, v.labels.Height, nil, v.entries.Height),
+		container.NewBorder(nil, nil, v.labels.Depth, nil, v.entries.Depth),
+		v.selects.LengthUnit,
 	)
 	massbox := container.NewGridWithRows(1,
-		container.NewBorder(nil, nil, v.labels.volume, v.selects.volumeunit, v.entries.volume),
-		container.NewBorder(nil, nil, v.labels.weight, v.selects.weightunit, v.entries.weight),
+		container.NewBorder(nil, nil, v.labels.Volume, v.selects.VolumeUnit, v.entries.Volume),
+		container.NewBorder(nil, nil, v.labels.Weight, v.selects.WeightUnit, v.entries.Weight),
 	)
 	v.container = container.New(layout.NewFormLayout(),
-		layout.NewSpacer(), container.NewHBox(v.labels.datecreatedtitle, v.labels.datecreated),
-		layout.NewSpacer(), container.NewHBox(v.labels.datemodifiedtitle, v.labels.datemodified),
-		v.labels.itemidtitle, v.labels.itemid,
-		layout.NewSpacer(), v.selects.status,
-		v.labels.name, v.entries.name,
-		v.labels.category, v.selects.category,
-		v.labels.manufacturer, v.entries.manufacturer,
-		v.labels.model, v.entries.model,
-		v.labels.modelurl, v.entries.modelurl,
+		layout.NewSpacer(), container.NewHBox(v.labels.DateCreated, v.values.DateCreated),
+		layout.NewSpacer(), container.NewHBox(v.labels.DateModified, v.values.DateModified),
+		v.labels.ItemID, v.labels.itemid,
+		layout.NewSpacer(), v.selects.Status,
+		v.labels.Name, v.entries.Name,
+		v.labels.Category, v.selects.Category,
+		v.labels.Manufacturer, v.entries.Manufacturer,
+		v.labels.Model, v.entries.Model,
+		v.labels.ModelURL, v.entries.ModelURL,
 		// v.labels.longdesc, v.entries.longdesc,
-		v.labels.dimensions, spacebox,
+		v.labels.Dimensions, spacebox,
 		layout.NewSpacer(), massbox,
-		v.labels.price, container.NewBorder(nil, nil, nil, midget.NewLabel("SEK", "", ""), v.entries.price),
+		v.labels.Price, container.NewBorder(nil, nil, nil, midget.NewLabel("SEK", "", ""), v.entries.Price),
 		// v.labels.adddesc, v.entries.adddesc,
-		v.labels.imgurl1, v.entries.imgurl1,
-		v.labels.notes, v.entries.notes,
+		v.labels.ImgURL1, v.entries.ImgURL1,
+		v.labels.Notes, v.entries.Notes,
 		layout.NewSpacer(), widget.NewLabel(" "),
 		layout.NewSpacer(), widget.NewRichTextFromMarkdown(`### `+lang.L("Preview")),
-		v.labels.longdesc, layout.NewSpacer(),
-		v.labels.adddesctitle, v.labels.adddesc,
+		v.labels.LongDesc, v.values.LongDesc,
+		v.labels.AddDesc, v.values.AddDesc,
 	)
 	v.Clear()
 	return v
@@ -479,143 +493,146 @@ func (v formView) Bind(id backend.ItemID) {
 	v.Clear()
 	v.Enable()
 
-	v.labels.itemid.Bind(id.Item().ItemIDString)
-	v.labels.status.Bind(id.Item().ItemStatus)
-	v.labels.datecreated.Bind(id.Item().DateCreated)
-	v.labels.datemodified.Bind(id.Item().DateModified)
-	v.labels.adddesc.Bind(id.Item().AddDesc)
+	v.values.ItemID.Bind(id.Item().ItemIDString)
+	// v.values.ItemStatus.Bind(id.Item().ItemStatus)
+	v.values.DateCreated.Bind(id.Item().DateCreated)
+	v.values.DateModified.Bind(id.Item().DateModified)
+	v.values.AddDesc.Bind(id.Item().AddDesc)
+	v.values.LongDesc.Bind(id.Item().LongDesc)
 
-	v.entries.name.Bind(id.Item().Name)
-	v.entries.price.Bind(id.Item().PriceString)
-	v.entries.vat.Bind(id.Item().VatString)
-	v.entries.imgurl1.Bind(id.Item().ImgURL1)
-	v.entries.specsurl.Bind(id.Item().SpecsURL)
+	v.entries.Name.Bind(id.Item().Name)
+	v.entries.Price.Bind(id.Item().PriceString)
+	v.entries.Vat.Bind(id.Item().VatString)
+	v.entries.ImgURL1.Bind(id.Item().ImgURL1)
+	v.entries.SpecsURL.Bind(id.Item().SpecsURL)
 	// v.entries.adddesc.Bind(id.Item().AddDesc)
-	v.entries.longdesc.Bind(id.Item().LongDesc)
-	v.entries.manufacturer.Bind(id.Item().Manufacturer)
-	v.entries.model.Bind(id.Item().Model)
-	v.entries.modelurl.Bind(id.Item().ModelURL)
-	v.entries.notes.Bind(id.Item().Notes)
-	v.entries.width.Bind(id.Item().WidthString)
-	v.entries.height.Bind(id.Item().HeightString)
-	v.entries.depth.Bind(id.Item().DepthString)
-	v.entries.volume.Bind(id.Item().VolumeString)
-	v.entries.weight.Bind(id.Item().WeightString)
+	// v.entries.longdesc.Bind(id.Item().LongDesc)
+	v.entries.Manufacturer.Bind(id.Item().Manufacturer)
+	v.entries.Model.Bind(id.Item().Model)
+	v.entries.ModelURL.Bind(id.Item().ModelURL)
+	v.entries.Notes.Bind(id.Item().Notes)
+	v.entries.Width.Bind(id.Item().WidthString)
+	v.entries.Height.Bind(id.Item().HeightString)
+	v.entries.Depth.Bind(id.Item().DepthString)
+	v.entries.Volume.Bind(id.Item().VolumeString)
+	v.entries.Weight.Bind(id.Item().WeightString)
 
-	v.selects.category.Bind(id.Item().Category)
-	v.selects.lengthunit.Bind(id.Item().LengthUnit)
-	v.selects.volumeunit.Bind(id.Item().VolumeUnit)
-	v.selects.weightunit.Bind(id.Item().WeightUnit)
-	v.selects.status.Bind(id.Item().ItemStatus)
+	v.selects.Category.Bind(id.Item().Category)
+	v.selects.LengthUnit.Bind(id.Item().LengthUnit)
+	v.selects.VolumeUnit.Bind(id.Item().VolumeUnit)
+	v.selects.WeightUnit.Bind(id.Item().WeightUnit)
+	v.selects.Status.Bind(id.Item().ItemStatus)
 }
 func (v formView) Clear() {
-	v.entries.name.Unbind()
-	v.entries.price.Unbind()
-	v.entries.vat.Unbind()
-	v.entries.imgurl1.Unbind()
-	v.entries.specsurl.Unbind()
+	v.entries.Name.Unbind()
+	v.entries.Price.Unbind()
+	v.entries.Vat.Unbind()
+	v.entries.ImgURL1.Unbind()
+	v.entries.SpecsURL.Unbind()
 	// v.entries.adddesc.Unbind()
-	v.entries.longdesc.Unbind()
-	v.entries.manufacturer.Unbind()
-	v.entries.model.Unbind()
-	v.entries.modelurl.Unbind()
-	v.entries.notes.Unbind()
-	v.entries.width.Unbind()
-	v.entries.height.Unbind()
-	v.entries.depth.Unbind()
-	v.entries.volume.Unbind()
-	v.entries.weight.Unbind()
+	// v.entries.longdesc.Unbind()
+	v.entries.Manufacturer.Unbind()
+	v.entries.Model.Unbind()
+	v.entries.ModelURL.Unbind()
+	v.entries.Notes.Unbind()
+	v.entries.Width.Unbind()
+	v.entries.Height.Unbind()
+	v.entries.Depth.Unbind()
+	v.entries.Volume.Unbind()
+	v.entries.Weight.Unbind()
 
-	v.labels.itemid.Unbind()
-	v.labels.status.Unbind()
-	v.labels.datecreated.Unbind()
-	v.labels.datemodified.Unbind()
-	v.labels.adddesc.Unbind()
+	v.values.ItemID.Unbind()
+	// v.values.ItemStatus.Unbind()
+	v.values.DateCreated.Unbind()
+	v.values.DateModified.Unbind()
+	v.values.AddDesc.Unbind()
+	v.values.LongDesc.Unbind()
 
-	v.selects.category.Unbind()
-	v.selects.lengthunit.Unbind()
-	v.selects.volumeunit.Unbind()
-	v.selects.weightunit.Unbind()
-	v.selects.status.Unbind()
+	v.selects.Category.Unbind()
+	v.selects.LengthUnit.Unbind()
+	v.selects.VolumeUnit.Unbind()
+	v.selects.WeightUnit.Unbind()
+	v.selects.Status.Unbind()
 
-	v.entries.name.SetText("")
-	v.entries.price.SetText("")
-	v.entries.vat.SetText("")
-	v.entries.imgurl1.SetText("")
-	v.entries.specsurl.SetText("")
+	v.entries.Name.SetText("")
+	v.entries.Price.SetText("")
+	v.entries.Vat.SetText("")
+	v.entries.ImgURL1.SetText("")
+	v.entries.SpecsURL.SetText("")
 	// v.entries.adddesc.SetText("")
-	v.entries.longdesc.SetText("")
-	v.entries.manufacturer.SetText("")
-	v.entries.model.SetText("")
-	v.entries.modelurl.SetText("")
-	v.entries.notes.SetText("")
-	v.entries.volume.SetText("")
-	v.entries.width.SetText("")
-	v.entries.height.SetText("")
-	v.entries.depth.SetText("")
-	v.entries.volume.SetText("")
-	v.entries.weight.SetText("")
+	// v.entries.longdesc.SetText("")
+	v.entries.Manufacturer.SetText("")
+	v.entries.Model.SetText("")
+	v.entries.ModelURL.SetText("")
+	v.entries.Notes.SetText("")
+	v.entries.Volume.SetText("")
+	v.entries.Width.SetText("")
+	v.entries.Height.SetText("")
+	v.entries.Depth.SetText("")
+	v.entries.Volume.SetText("")
+	v.entries.Weight.SetText("")
 
-	v.labels.itemid.SetText("0000000000")
-	v.labels.status.SetText("")
-	v.labels.datecreated.SetText("")
-	v.labels.datemodified.SetText("")
-	v.labels.adddesc.SetText("")
+	v.values.ItemID.SetText("0000000000")
+	// v.values.ItemStatus.SetText("")
+	v.values.DateCreated.SetText("")
+	v.values.DateModified.SetText("")
+	v.values.AddDesc.SetText("")
+	v.values.LongDesc.SetText("")
 
-	v.selects.category.ClearSelected()
-	v.selects.lengthunit.ClearSelected()
-	v.selects.volumeunit.ClearSelected()
-	v.selects.weightunit.ClearSelected()
-	v.selects.status.ClearSelected()
+	v.selects.Category.ClearSelected()
+	v.selects.LengthUnit.ClearSelected()
+	v.selects.VolumeUnit.ClearSelected()
+	v.selects.WeightUnit.ClearSelected()
+	v.selects.Status.ClearSelected()
 
 	v.Disable()
 }
 
 func (v formView) Disable() {
-	v.entries.name.Disable()
-	v.entries.price.Disable()
-	v.entries.vat.Disable()
-	v.entries.imgurl1.Disable()
-	v.entries.specsurl.Disable()
+	v.entries.Name.Disable()
+	v.entries.Price.Disable()
+	v.entries.Vat.Disable()
+	v.entries.ImgURL1.Disable()
+	v.entries.SpecsURL.Disable()
 	// v.entries.adddesc.Disable()
-	v.entries.longdesc.Disable()
-	v.entries.manufacturer.Disable()
-	v.entries.model.Disable()
-	v.entries.modelurl.Disable()
-	v.entries.notes.Disable()
-	v.entries.width.Disable()
-	v.entries.height.Disable()
-	v.entries.depth.Disable()
-	v.entries.volume.Disable()
-	v.entries.weight.Disable()
+	v.entries.LongDesc.Disable()
+	v.entries.Manufacturer.Disable()
+	v.entries.Model.Disable()
+	v.entries.ModelURL.Disable()
+	v.entries.Notes.Disable()
+	v.entries.Width.Disable()
+	v.entries.Height.Disable()
+	v.entries.Depth.Disable()
+	v.entries.Volume.Disable()
+	v.entries.Weight.Disable()
 
-	v.selects.category.Disable()
-	v.selects.lengthunit.Disable()
-	v.selects.volumeunit.Disable()
-	v.selects.weightunit.Disable()
-	v.selects.status.Disable()
+	v.selects.Category.Disable()
+	v.selects.LengthUnit.Disable()
+	v.selects.VolumeUnit.Disable()
+	v.selects.WeightUnit.Disable()
+	v.selects.Status.Disable()
 }
 func (v formView) Enable() {
-	v.entries.name.Enable()
-	v.entries.price.Enable()
-	v.entries.vat.Enable()
-	v.entries.imgurl1.Enable()
-	v.entries.specsurl.Enable()
+	v.entries.Name.Enable()
+	v.entries.Price.Enable()
+	v.entries.Vat.Enable()
+	v.entries.ImgURL1.Enable()
+	v.entries.SpecsURL.Enable()
 	// v.entries.adddesc.Enable()
-	v.entries.longdesc.Enable()
-	v.entries.manufacturer.Enable()
-	v.entries.model.Enable()
-	v.entries.modelurl.Enable()
-	v.entries.notes.Enable()
-	v.entries.width.Enable()
-	v.entries.height.Enable()
-	v.entries.depth.Enable()
-	v.entries.volume.Enable()
-	v.entries.weight.Enable()
+	v.entries.LongDesc.Enable()
+	v.entries.Manufacturer.Enable()
+	v.entries.Model.Enable()
+	v.entries.ModelURL.Enable()
+	v.entries.Notes.Enable()
+	v.entries.Width.Enable()
+	v.entries.Height.Enable()
+	v.entries.Depth.Enable()
+	v.entries.Volume.Enable()
+	v.entries.Weight.Enable()
 
-	v.selects.category.Enable()
-	v.selects.lengthunit.Enable()
-	v.selects.volumeunit.Enable()
-	v.selects.weightunit.Enable()
-	v.selects.status.Enable()
+	v.selects.Category.Enable()
+	v.selects.LengthUnit.Enable()
+	v.selects.VolumeUnit.Enable()
+	v.selects.WeightUnit.Enable()
+	v.selects.Status.Enable()
 }
