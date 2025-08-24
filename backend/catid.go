@@ -80,45 +80,22 @@ func (id *CatID) Scan(src any) error {
 	return nil
 }
 
+func (id CatID) TypeName() string {
+	return "CatID"
+}
+
 /* Returns Name from SQL query */
 func (id CatID) Name() (val string, err error) {
-	var s sql.NullString
-	query := `SELECT Name FROM Category WHERE CatID = @0`
-	stmt, err := be.db.Prepare(query)
-	if err != nil {
-		return val, fmt.Errorf("CatID(%d).Name() error: %w", id, err)
-	}
-	defer stmt.Close()
-	err = stmt.QueryRow(id).Scan(&s)
-	if err != nil {
-		return val, fmt.Errorf("CatID(%d).Name() error: %w", id, err)
-	}
-	if s.Valid {
-		val = s.String
-	} else {
-		err = ErrSQLNullValue
-	}
-	return
+	return id.getString("Name")
 }
 
 func (id CatID) SetName() error {
-	s, err := id.Category().Name.Get()
+	key := "Name"
+	val, err := id.Category().Name.Get()
 	if err != nil {
-		return fmt.Errorf("CatID.SetName() error: %w", err)
+		return fmt.Errorf("MfrID.SetName() error: %w", err)
 	}
-	query := `UPDATE Category SET Name = @0 WHERE CatID = @1 AND Name <> @2`
-	stmt, err := be.db.Prepare(query)
-	if err != nil {
-		log.Println(err)
-		return fmt.Errorf("CatID.SetName() error: %w", err)
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(s, id, s)
-	if err != nil {
-		log.Println(err)
-		return fmt.Errorf("CatID.SetName() error: %w", err)
-	}
-	return err
+	return id.setString(key, val)
 }
 
 func (id CatID) Category() *Category {
@@ -132,4 +109,59 @@ func getCategory(b *Backend, id CatID) *Category {
 		b.Metadata.categoryData[id] = c
 	}
 	return b.Metadata.categoryData[id]
+}
+func (id CatID) getBool(key string) (val bool, err error) {
+	b, err := getValue[sql.NullBool]("Category", id, key)
+	if b.Valid {
+		val = b.Bool
+	} else {
+		log.Printf("getBool(%s) b is invalid (NULL), err is %v", key, err)
+		err = ErrSQLNullValue
+	}
+	return
+}
+func (id CatID) getFloat(key string) (val float64, err error) {
+	f, err := getValue[sql.NullFloat64]("Category", id, key)
+	if f.Valid {
+		val = f.Float64
+	} else {
+		log.Printf("getFloat(%s) %s is invalid (NULL), err is %v", key, key, err)
+		err = ErrSQLNullValue
+	}
+	return
+}
+func (id CatID) getInt(key string) (val int, err error) {
+	i, err := getValue[sql.NullInt64]("Category", id, key)
+	val = int(i.Int64)
+	if !i.Valid {
+		log.Printf("getInt(%s) %s is invalid (NULL), err is %v", key, key, err)
+		err = ErrSQLNullValue
+	}
+	return
+}
+func (id CatID) getString(key string) (val string, err error) {
+	s, err := getValue[sql.NullString]("Category", id, key)
+	if s.Valid {
+		val = s.String
+	} else {
+		log.Printf("getInt(%s) %s is invalid (NULL), err is %v", key, key, err)
+		err = ErrSQLNullValue
+	}
+	return
+}
+func (id CatID) setBool(key string, val bool) error {
+	err := setValue("Category", id, key, val)
+	return err
+}
+func (id CatID) setFloat(key string, val float64) error {
+	err := setValue("Category", id, key, val)
+	return err
+}
+func (id CatID) setInt(key string, val int) error {
+	err := setValue("Category", id, key, val)
+	return err
+}
+func (id CatID) setString(key string, val string) error {
+	err := setValue("Category", id, key, val)
+	return err
 }

@@ -178,6 +178,7 @@ var (
 	_ sql.Scanner   = (*ItemID)(nil)
 	_ driver.Valuer = (*ItemID)(nil)
 	_ fmt.Stringer  = (*ItemID)(nil)
+	_ NumID         = (ItemID)(0)
 )
 
 func (id *ItemID) Scan(src any) error {
@@ -236,6 +237,9 @@ func (id ItemID) String() string {
 }
 func (id ItemID) Int() int {
 	return int(id)
+}
+func (id ItemID) TypeName() string {
+	return "ItemID"
 }
 func (id ItemID) Item() *Item {
 	return getItem(be, id)
@@ -385,7 +389,7 @@ func (id ItemID) DateModified() (t time.Time, err error) {
 }
 
 func (id ItemID) getBool(key string) (val bool, err error) {
-	b, err := getItemIDValue[sql.NullBool](&id, key)
+	b, err := getValue[sql.NullBool]("Item", id, key)
 	if b.Valid {
 		val = b.Bool
 	} else {
@@ -395,7 +399,7 @@ func (id ItemID) getBool(key string) (val bool, err error) {
 	return
 }
 func (id ItemID) getFloat(key string) (val float64, err error) {
-	f, err := getItemIDValue[sql.NullFloat64](&id, key)
+	f, err := getValue[sql.NullFloat64]("Item", id, key)
 	if f.Valid {
 		val = f.Float64
 	} else {
@@ -405,7 +409,7 @@ func (id ItemID) getFloat(key string) (val float64, err error) {
 	return
 }
 func (id ItemID) getInt(key string) (val int, err error) {
-	i, err := getItemIDValue[sql.NullInt64](&id, key)
+	i, err := getValue[sql.NullInt64]("Item", id, key)
 	val = int(i.Int64)
 	if !i.Valid {
 		log.Printf("getInt(%s) %s is invalid (NULL), err is %v", key, key, err)
@@ -414,27 +418,12 @@ func (id ItemID) getInt(key string) (val int, err error) {
 	return
 }
 func (id ItemID) getString(key string) (val string, err error) {
-	s, err := getItemIDValue[sql.NullString](&id, key)
+	s, err := getValue[sql.NullString]("Item", id, key)
 	if s.Valid {
 		val = s.String
 	} else {
 		log.Printf("getInt(%s) %s is invalid (NULL), err is %v", key, key, err)
 		err = ErrSQLNullValue
-	}
-	return
-}
-func getItemIDValue[T sql.NullBool | sql.NullFloat64 | NullInt | sql.NullInt64 | sql.NullString](id *ItemID, key string) (val T, err error) {
-	query := `SELECT ` + key + ` FROM Item WHERE ItemID = @1`
-	stmt, err := be.db.Prepare(query)
-	if err != nil {
-		log.Printf("getItemIDValue(%d, %s) panic!", id, key)
-		panic(err)
-	}
-	defer stmt.Close()
-	err = stmt.QueryRow(id).Scan(&val)
-	if err != nil {
-		log.Printf("getItemIDValue(%d, %s) panic!", id, key)
-		panic(err)
 	}
 	return
 }
@@ -808,36 +797,33 @@ func (id ItemID) SetItemStatusID(t ItemStatusID) error {
 	val := int(t)
 	return id.setInt(key, val)
 }
+func (id ItemID) updateDateModified() {
+	dm, err := id.DateModified()
+	if err != nil {
+		log.Println(err)
+	}
+	id.Item().DateModified.Set(dm.Format(time.DateTime))
+}
 
 func (id ItemID) setBool(key string, val bool) error {
-	return setItemIDValue(id, key, val)
+	err := setValue("Item", id, key, val)
+	id.updateDateModified()
+	return err
 }
 func (id ItemID) setFloat(key string, val float64) error {
-	return setItemIDValue(id, key, val)
+	err := setValue("Item", id, key, val)
+	id.updateDateModified()
+	return err
 }
 func (id ItemID) setInt(key string, val int) error {
-	return setItemIDValue(id, key, val)
+	err := setValue("Item", id, key, val)
+	id.updateDateModified()
+	return err
 }
 func (id ItemID) setString(key string, val string) error {
-	return setItemIDValue(id, key, val)
-}
-func setItemIDValue[T bool | float64 | int | string](id ItemID, key string, val T) (err error) {
-	query := `UPDATE Item SET ` + key + ` = @1 WHERE ItemID = @2 AND ` + key + ` <> @3`
-	log.Printf("UPDATE Item SET %s = %v WHERE ItemID = %d AND %s <> %v", key, val, id, key, val)
-	stmt, err := be.db.Prepare(query)
-	if err != nil {
-		log.Printf("setItemIDValue(%d, %s, %v) panic!", id, key, val)
-		panic(err)
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(val, id, val)
-	if err != nil {
-		log.Printf("setItemIDValue(%d, %s, %v) panic!", id, key, val)
-		panic(err)
-	}
-	dm, _ := id.DateModified()
-	id.Item().DateModified.Set(dm.Format(time.DateTime))
-	return
+	err := setValue("Item", id, key, val)
+	id.updateDateModified()
+	return err
 }
 
 /* Get the pointer to Item from map or make one and return it */
@@ -943,6 +929,7 @@ func (m *Items) CreateNewItem() (ItemID, error) {
 	return i, err
 }
 func (m *Items) CopyItem(id ItemID) (ItemID, error) {
+	// TODO this needs to be looked over as some columns are renamed and added ! !
 	query := `INSERT INTO Item (Name, Price, Currency, QuantityInPrice, Unit, OrderMultiple, MinOrder, Vat, Eta, EtaText, 
 Priority, Stock, ImgURL1, ImgURL2, ImgURL3, ImgURL4, ImgURL5, SpecsURL, UNSPSC, LongDesc, Manufacturer, 
 MfrItemId, GlobId, GlobIdType, ReplacesItem, Questions, PackagingCode, PresentationCode, 

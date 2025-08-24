@@ -275,7 +275,7 @@ VALUES ("UppSpar"), ("IKEA"), ("Kinnarps")`)
 ModelID      INTEGER PRIMARY KEY AUTOINCREMENT, 
 Name         TEXT DEFAULT 'Ny modell', 
 MfrID        INT DEFAULT 0, 
-Descr        TEXT DEFAULT '', 
+Desc         TEXT DEFAULT '', 
 ImgURL1      TEXT DEFAULT '', 
 ImgURL2      TEXT DEFAULT '', 
 ImgURL3      TEXT DEFAULT '', 

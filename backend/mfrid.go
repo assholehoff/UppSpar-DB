@@ -79,45 +79,22 @@ func (id *MfrID) Scan(src any) error {
 	return nil
 }
 
+func (id MfrID) TypeName() string {
+	return "MfrID"
+}
+
 /* Returns Name from SQL query */
 func (id MfrID) Name() (val string, err error) {
-	var s sql.NullString
-	query := `SELECT Name FROM Manufacturer WHERE MfrID = @0`
-	stmt, err := be.db.Prepare(query)
-	if err != nil {
-		return val, fmt.Errorf("MfrID(%d).Name() error: %w", id, err)
-	}
-	defer stmt.Close()
-	err = stmt.QueryRow(id).Scan(&s)
-	if err != nil {
-		return val, fmt.Errorf("MfrID(%d).Name() error: %w", id, err)
-	}
-	if s.Valid {
-		val = s.String
-	} else {
-		err = ErrSQLNullValue
-	}
-	return
+	return id.getString("Name")
 }
 
 func (id MfrID) SetName() error {
-	s, err := id.Manufacturer().Name.Get()
+	key := "Name"
+	val, err := id.Manufacturer().Name.Get()
 	if err != nil {
 		return fmt.Errorf("MfrID.SetName() error: %w", err)
 	}
-	query := `UPDATE Manufacturer SET Name = @0 WHERE MfrID = @1 AND Name <> @2`
-	stmt, err := be.db.Prepare(query)
-	if err != nil {
-		log.Println(err)
-		return fmt.Errorf("MfrID.SetName() error: %w", err)
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(s, id, s)
-	if err != nil {
-		log.Println(err)
-		return fmt.Errorf("MfrID.SetName() error: %w", err)
-	}
-	return err
+	return id.setString(key, val)
 }
 
 func (id MfrID) Manufacturer() *Manufacturer {
@@ -131,4 +108,60 @@ func getManufacturer(b *Backend, id MfrID) *Manufacturer {
 		b.Metadata.mfrData[id] = mfr
 	}
 	return b.Metadata.mfrData[id]
+}
+
+func (id MfrID) getBool(key string) (val bool, err error) {
+	b, err := getValue[sql.NullBool]("Manufacturer", id, key)
+	if b.Valid {
+		val = b.Bool
+	} else {
+		log.Printf("getBool(%s) b is invalid (NULL), err is %v", key, err)
+		err = ErrSQLNullValue
+	}
+	return
+}
+func (id MfrID) getFloat(key string) (val float64, err error) {
+	f, err := getValue[sql.NullFloat64]("Manufacturer", id, key)
+	if f.Valid {
+		val = f.Float64
+	} else {
+		log.Printf("getFloat(%s) %s is invalid (NULL), err is %v", key, key, err)
+		err = ErrSQLNullValue
+	}
+	return
+}
+func (id MfrID) getInt(key string) (val int, err error) {
+	i, err := getValue[sql.NullInt64]("Manufacturer", id, key)
+	val = int(i.Int64)
+	if !i.Valid {
+		log.Printf("getInt(%s) %s is invalid (NULL), err is %v", key, key, err)
+		err = ErrSQLNullValue
+	}
+	return
+}
+func (id MfrID) getString(key string) (val string, err error) {
+	s, err := getValue[sql.NullString]("Manufacturer", id, key)
+	if s.Valid {
+		val = s.String
+	} else {
+		log.Printf("getInt(%s) %s is invalid (NULL), err is %v", key, key, err)
+		err = ErrSQLNullValue
+	}
+	return
+}
+func (id MfrID) setBool(key string, val bool) error {
+	err := setValue("Manufacturer", id, key, val)
+	return err
+}
+func (id MfrID) setFloat(key string, val float64) error {
+	err := setValue("Manufacturer", id, key, val)
+	return err
+}
+func (id MfrID) setInt(key string, val int) error {
+	err := setValue("Manufacturer", id, key, val)
+	return err
+}
+func (id MfrID) setString(key string, val string) error {
+	err := setValue("Manufacturer", id, key, val)
+	return err
 }

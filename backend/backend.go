@@ -56,6 +56,44 @@ func ItemIDWidth() int {
 func CatIDFor(s string) (CatID, error) {
 	return be.Metadata.findCatIDFor(s)
 }
+func MfrIDFor(s string) (MfrID, error) {
+	var i NullInt
+	var id MfrID
+
+	query := `SELECT MfrID FROM Manufacturer WHERE Name = @0`
+	stmt, err := be.db.Prepare(query)
+	if err != nil {
+		return id, fmt.Errorf("MfrIDFor(%s) error: %w", s, err)
+	}
+	defer stmt.Close()
+	stmt.QueryRow(s).Scan(&id)
+
+	if !i.Valid {
+		return id, ErrNotFound
+	}
+
+	id = MfrID(i.Int)
+	return id, nil
+}
+func ModelIDFor(s string) (ModelID, error) {
+	var i NullInt
+	var id ModelID
+
+	query := `SELECT ModelID FROM Model WHERE Name = @0`
+	stmt, err := be.db.Prepare(query)
+	if err != nil {
+		return id, fmt.Errorf("ModelIDFor(%s) error: %w", s, err)
+	}
+	defer stmt.Close()
+	stmt.QueryRow(s).Scan(&id)
+
+	if !i.Valid {
+		return id, ErrNotFound
+	}
+
+	id = ModelID(i.Int)
+	return id, nil
+}
 func UnitIDFor(s string) (UnitID, error) {
 	var i NullInt
 	var id UnitID
