@@ -11,7 +11,7 @@ import (
 type Metadata struct {
 	b            *Backend
 	categoryData map[CatID]*Category
-	mfrData      map[MfrID]*Mfr
+	mfrData      map[MfrID]*Manufacturer
 	modelData    map[ModelID]*Model
 
 	catSelection binding.UntypedList
@@ -31,7 +31,7 @@ func NewMetadata(b *Backend) *Metadata {
 	return &Metadata{
 		b:              b,
 		categoryData:   make(map[CatID]*Category),
-		mfrData:        make(map[MfrID]*Mfr),
+		mfrData:        make(map[MfrID]*Manufacturer),
 		modelData:      make(map[ModelID]*Model),
 		catSelection:   binding.NewUntypedList(),
 		mfrSelection:   binding.NewUntypedList(),

@@ -168,16 +168,16 @@ func newItemView(a *App) *itemView {
 	toolbarLeft := container.NewGridWithRows(1,
 		layout.NewSpacer(),
 		widget.NewSelect([]string{
-			lang.X("item.form.name.text", "item.form.name.text"),
-			lang.X("item.form.manufacturer.text", "item.form.manufacturer.text"),
+			lang.X("item.form.label.name", "item.form.label.name"),
+			lang.X("item.form.label.manufacturer", "item.form.label.manufacturer"),
 		}, func(s string) {
 			if s == b.Items.SearchKey().String() {
 				return
 			}
 			switch s {
-			case lang.X("item.form.name.text", "item.form.name.text"):
+			case lang.X("item.form.label.name", "item.form.label.name"):
 				b.Items.SetSearchKey(backend.SearchKeyName)
-			case lang.X("item.form.manufacturer.text", "item.form.manufacturer.text"):
+			case lang.X("item.form.label.manufacturer", "item.form.label.manufacturer"):
 				b.Items.SetSearchKey(backend.SearchKeyManufacturer)
 			}
 			b.Items.Search()
@@ -293,7 +293,6 @@ type formDataLabels struct {
 
 type formLabels struct {
 	ItemID        *widget.Label
-	itemid        *widget.Label
 	Name          *widget.Label
 	Category      *widget.Label
 	Price         *widget.Label
@@ -396,8 +395,7 @@ func newFormView(b *backend.Backend) *formView {
 			Weight:       widget.NewEntry(),
 		},
 		labels: &formLabels{
-			ItemID:       widget.NewLabel(lang.X("item.form.itemid.text", "item.form.itemid.text")),
-			itemid:       widget.NewLabel("0000000000"),
+			ItemID:       widget.NewLabel(lang.X("item.form.label.itemid", "item.form.label.itemid")),
 			Name:         widget.NewLabel(lang.X("item.form.label.name", "item.form.label.name")),
 			Category:     widget.NewLabel(lang.X("item.form.label.category", "item.form.label.category")),
 			Price:        widget.NewLabel(lang.X("item.form.label.price", "item.form.label.price")),
@@ -453,6 +451,7 @@ func newFormView(b *backend.Backend) *formView {
 	v.entries.Notes.MultiLine = true
 	v.entries.Notes.SetMinRowsVisible(5)
 	v.entries.Notes.Wrapping = fyne.TextWrapWord
+	idbox := container.NewBorder(nil, nil, v.values.ItemID, nil, container.NewHBox(v.selects.Status))
 	spacebox := container.NewGridWithRows(1,
 		container.NewBorder(nil, nil, v.labels.Width, nil, v.entries.Width),
 		container.NewBorder(nil, nil, v.labels.Height, nil, v.entries.Height),
@@ -466,8 +465,8 @@ func newFormView(b *backend.Backend) *formView {
 	v.container = container.New(layout.NewFormLayout(),
 		layout.NewSpacer(), container.NewHBox(v.labels.DateCreated, v.values.DateCreated),
 		layout.NewSpacer(), container.NewHBox(v.labels.DateModified, v.values.DateModified),
-		v.labels.ItemID, v.labels.itemid,
-		layout.NewSpacer(), v.selects.Status,
+		v.labels.ItemID, idbox,
+		// layout.NewSpacer(), v.selects.Status,
 		v.labels.Name, v.entries.Name,
 		v.labels.Category, v.selects.Category,
 		v.labels.Manufacturer, v.entries.Manufacturer,

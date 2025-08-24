@@ -18,37 +18,116 @@ import (
 	ttw "github.com/dweymouth/fyne-tooltip/widget"
 )
 
-type metadataChecks struct {
+type metadataView struct {
+	category     *categoryView
+	manufacturer *manufacturerView
+	model        *modelView
+	tabs         *container.AppTabs
+}
+
+func newMetadataView(b *backend.Backend) *metadataView {
+	categoryView := newCategoryView(b)
+	manufacturerView := newManufacturerView(b)
+	modelView := newModelView(b)
+
+	return &metadataView{
+		category:     categoryView,
+		manufacturer: manufacturerView,
+		model:        modelView,
+		tabs:         newMetadataTabs(categoryView, manufacturerView, modelView),
+	}
+}
+
+func newMetadataTabs(c *categoryView, mfr *manufacturerView, mdl *modelView) *container.AppTabs {
+	tabs := container.NewAppTabs(
+		container.NewTabItem(lang.L("Manufacturers"), mfr.container),
+		container.NewTabItem(lang.L("Models"), mdl.container),
+		container.NewTabItem(lang.L("Categories"), c.container),
+	)
+	return tabs
+}
+
+type manufacturerView struct {
+	container *container.Split
+}
+
+func newManufacturerView(b *backend.Backend) *manufacturerView {
+	createItem := func() fyne.CanvasObject {
+		l := widget.NewLabel("Template category name")
+		return l
+	}
+	updateItem := func(di binding.DataItem, co fyne.CanvasObject) {
+		v, err := di.(binding.Untyped).Get()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		MfrID := v.(backend.MfrID)
+		co.(*widget.Label).Bind(MfrID.Manufacturer().Name)
+	}
+	l := widget.NewListWithData(b.Metadata.MfrIDList, createItem, updateItem)
+	f := container.New(layout.NewFormLayout())
+	s := container.NewHSplit(l, f)
+	s.SetOffset(0.25)
+	return &manufacturerView{container: s}
+}
+
+type modelView struct {
+	container *container.Split
+}
+
+func newModelView(b *backend.Backend) *modelView {
+	createItem := func() fyne.CanvasObject {
+		l := widget.NewLabel("Template category name")
+		return l
+	}
+	updateItem := func(di binding.DataItem, co fyne.CanvasObject) {
+		v, err := di.(binding.Untyped).Get()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		ModelID := v.(backend.ModelID)
+		co.(*widget.Label).Bind(ModelID.Model().Name)
+	}
+	l := widget.NewListWithData(b.Metadata.ModelIDList, createItem, updateItem)
+	f := container.New(layout.NewFormLayout())
+	s := container.NewHSplit(l, f)
+	s.SetOffset(0.25)
+	return &modelView{container: s}
+}
+
+type categoryChecks struct {
 	price *ttw.Check
 }
 
-type metadataEntries struct {
+type categoryEntries struct {
 	name *xwidget.CompletionEntry
 }
 
-type metadataLabels struct {
+type categoryLabels struct {
 	name *midget.Label
 }
 
-type metadataSelects struct {
+type categorySelects struct {
 }
 
-type metadataFormView struct {
+type categoryFormView struct {
 	container *fyne.Container
 	checks    *struct{}
-	entries   *metadataEntries
-	labels    *metadataLabels
+	entries   *categoryEntries
+	labels    *categoryLabels
 	selects   *struct{}
 }
 
-type metadataView struct {
+type categoryView struct {
 	container *container.Split
-	form      *metadataFormView
+	form      *categoryFormView
 	list      *widget.List
 	toolbar   *widget.Toolbar
 }
 
-func newMetadataView(b *backend.Backend) *metadataView {
+func newCategoryView(b *backend.Backend) *categoryView {
 	createItem := func() fyne.CanvasObject {
 		l := widget.NewLabel("Template category name")
 		return l
@@ -62,21 +141,18 @@ func newMetadataView(b *backend.Backend) *metadataView {
 		CatID := v.(backend.CatID)
 		co.(*widget.Label).Bind(CatID.Category().Name)
 	}
-	m := &metadataView{
+	m := &categoryView{
 		list: widget.NewListWithData(b.Metadata.CatIDList, createItem, updateItem),
 	}
-	m.form = &metadataFormView{
-		entries: &metadataEntries{
+	m.form = &categoryFormView{
+		entries: &categoryEntries{
 			name: xwidget.NewCompletionEntry([]string{}),
 		},
-		labels: &metadataLabels{
+		labels: &categoryLabels{
 			name: midget.NewLabel(lang.X("metadata.form.name", "metadata.form.name"), "", ""),
 		},
 	}
 	m.form.container = container.New(layout.NewFormLayout(),
-		widget.NewRichTextFromMarkdown(
-			`## `+lang.X("metadata.subtitle.categories", "metadata.subtitle.categories"),
-		), layout.NewSpacer(),
 		m.form.labels.name, m.form.entries.name,
 	)
 	m.list.OnSelected = func(id widget.ListItemID) {
@@ -125,7 +201,7 @@ func newMetadataView(b *backend.Backend) *metadataView {
 	return m
 }
 
-func (m *metadataFormView) Bind(b *backend.Backend, id backend.CatID) {
+func (m *categoryFormView) Bind(b *backend.Backend, id backend.CatID) {
 	m.entries.name.Bind(id.Category().Name)
 	id.Category().Name.AddListener(binding.NewDataListener(func() { b.Metadata.UpdateCatList() }))
 }

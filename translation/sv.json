@@ -1,4 +1,6 @@
 {
+    "Category" : "Kategori",
+    "Categories" : "Kategorier",
     "Close" : "Stäng",
     "Continue" : "Fortsätt",
     "Create" : "Skapa",
@@ -6,7 +8,9 @@
     "Export" : "Exportera",
     "Items" : "Föremål",
     "Journal" : "Journal",
+    "Manufacturers" : "Tillverkare",
     "Metadata" : "Metadata",
+    "Models" : "Modeller",
     "New" : "Ny",
     "Open" : "Öppna",
     "Open existing or create new database?" : "Öppna existerande eller skapa ny databas?",

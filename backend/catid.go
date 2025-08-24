@@ -80,10 +80,6 @@ func (id *CatID) Scan(src any) error {
 	return nil
 }
 
-func (id CatID) Category() *Category {
-	return getCategory(be, id)
-}
-
 /* Returns Name from SQL query */
 func (id CatID) Name() (val string, err error) {
 	var s sql.NullString
@@ -123,6 +119,10 @@ func (id CatID) SetName() error {
 		return fmt.Errorf("CatID.SetName() error: %w", err)
 	}
 	return err
+}
+
+func (id CatID) Category() *Category {
+	return getCategory(be, id)
 }
 
 /* Get the pointer to Category from map or make one and return it */

@@ -1,4 +1,6 @@
 {
+    "Category" : "Category",
+    "Categories" : "Categories",
     "Close" : "Close",
     "Continue" : "Continue",
     "Create" : "Create",
@@ -6,7 +8,9 @@
     "Export" : "Export",
     "Items" : "Items",
     "Journal" : "Journal",
+    "Manufacturers" : "Manufacturers",
     "Metadata" : "Metadata",
+    "Models" : "Models",
     "New" : "New",
     "Open" : "Open",
     "Open existing or create new database?" : "Open existing or create new database?",

@@ -227,7 +227,8 @@ FOREIGN KEY(ItemID) REFERENCES Item(ItemID) ON DELETE CASCADE)`)
 		log.Printf("!slices.Contains(tables \"Item_Group\")")
 		b.db.Exec(`CREATE TABLE Item_Group(
 GroupID INTEGER PRIMARY KEY AUTOINCREMENT,
-Name TEXT)`)
+Name TEXT DEFAULT '',
+Deleted BOOL DEFAULT false)`)
 		touched = true
 	}
 	if !slices.Contains(tables, "Item_Function") {
@@ -262,7 +263,8 @@ VALUES ("available"), ("sold"), ("archived"), ("deleted")`)
 		log.Printf("!slices.Contains(tables \"Manufacturer\")")
 		b.db.Exec(`CREATE TABLE Manufacturer(
 MfrID INTEGER PRIMARY KEY AUTOINCREMENT, 
-Name TEXT DEFAULT 'Ny tillverkare')`)
+Name TEXT DEFAULT 'Ny tillverkare'),
+Deleted BOOL DEFAULT false`)
 		b.db.Exec(`INSERT INTO Manufacturer (Name) 
 VALUES ("UppSpar"), ("IKEA"), ("Kinnarps")`)
 		touched = true
@@ -270,18 +272,32 @@ VALUES ("UppSpar"), ("IKEA"), ("Kinnarps")`)
 	if !slices.Contains(tables, "Model") {
 		log.Printf("!slices.Contains(tables \"Model\")")
 		b.db.Exec(`CREATE TABLE Model(
-ModelID INTEGER PRIMARY KEY AUTOINCREMENT, 
-Name TEXT DEFAULT 'Ny modell', 
-MfrID INT DEFAULT 0, 
-Descr TEXT DEFAULT '', 
-ImgURL1 TEXT DEFAULT '', 
-ImgURL2 TEXT DEFAULT '', 
-ImgURL3 TEXT DEFAULT '', 
-ImgURL4 TEXT DEFAULT '', 
-ImgURL5 TEXT DEFAULT '', 
-SpecsURL TEXT DEFAULT '', 
-ModelURL TEXT DEFAULT '', 
-FOREIGN KEY(MfrID) REFERENCES Manufacturer(MfrID))`)
+ModelID      INTEGER PRIMARY KEY AUTOINCREMENT, 
+Name         TEXT DEFAULT 'Ny modell', 
+MfrID        INT DEFAULT 0, 
+Descr        TEXT DEFAULT '', 
+ImgURL1      TEXT DEFAULT '', 
+ImgURL2      TEXT DEFAULT '', 
+ImgURL3      TEXT DEFAULT '', 
+ImgURL4      TEXT DEFAULT '', 
+ImgURL5      TEXT DEFAULT '', 
+SpecsURL     TEXT DEFAULT '', 
+ModelURL     TEXT DEFAULT '', 
+Width        REAL DEFAULT 0, 
+Height       REAL DEFAULT 0, 
+Depth        REAL DEFAULT 0, 
+Volume       REAL DEFAULT 0, 
+Weight       REAL DEFAULT 0, 
+LengthUnitID INT DEFAULT 2, 
+VolumeUnitID INT DEFAULT 11, 
+WeightUnitID INT DEFAULT 7, 
+CatID        INT DEFAULT 1, 
+Deleted      BOOL DEFAULT false, 
+FOREIGN KEY(MfrID) REFERENCES Manufacturer(MfrID)
+FOREIGN KEY(LengthUnitID) REFERENCES Metric(UnitID), 
+FOREIGN KEY(VolumeUnitID) REFERENCES Metric(UnitID), 
+FOREIGN KEY(WeightUnitID) REFERENCES Metric(UnitID), 
+FOREIGN KEY(CatID) REFERENCES Category(CatID))`)
 		touched = true
 	}
 
@@ -314,7 +330,8 @@ FOREIGN KEY(CatID) REFERENCES Category(CatID) ON DELETE CASCADE)`)
 ImgID INTEGER PRIMARY KEY AUTOINCREMENT, 
 ImgData BLOB, 
 ImgThumb BLOB, 
-ImgURL TEXT)`)
+ImgURL TEXT DEFAULT '', 
+Deleted BOOL DEFAULT false),`)
 		touched = true
 	}
 
