@@ -9,11 +9,13 @@ import (
 
 type Category struct {
 	binding.DataItem
-	db     *sql.DB
-	CatID  CatID
-	Name   binding.String
-	Config map[string]bool
-	Data   map[string]string
+	db      *sql.DB
+	CatID   CatID
+	Name    binding.String
+	Config  map[string]bool   // which fields to display in form
+	Data    map[string]string // what text to put in spreadsheet
+	branch  bool
+	touched bool
 }
 
 func newCategory(b *Backend, id CatID) *Category {

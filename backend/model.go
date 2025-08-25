@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 )
 
+/* Note: "Model" should probably be called "Product" */
 type Model struct {
 	binding.DataItem
 	db           *sql.DB
@@ -37,6 +38,8 @@ type Model struct {
 	LengthUnit   binding.String
 	VolumeUnit   binding.String
 	WeightUnit   binding.String
+	branch       bool
+	touched      bool
 }
 
 func newModel(b *Backend, id ModelID) *Model {

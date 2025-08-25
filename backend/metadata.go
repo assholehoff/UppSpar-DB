@@ -20,6 +20,8 @@ type Metadata struct {
 	mfrSelection binding.UntypedList
 	MfrIDList    binding.UntypedList
 
+	// TODO Merge Mfr and Model to a binding.UntypedTree
+
 	modelSelection binding.UntypedList
 	ModelIDList    binding.UntypedList
 
@@ -172,6 +174,8 @@ func (m *Metadata) getAllCatIDs() error {
 	}
 	return err
 }
+func (m *Metadata) getAllMfrIDs()   {}
+func (m *Metadata) getAllModelIDs() {}
 func (m *Metadata) getAllUnitIDs() {
 	query := `SELECT UnitID FROM Metric`
 	stmt, err := m.b.db.Prepare(query)

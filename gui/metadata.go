@@ -69,6 +69,18 @@ func newManufacturerView(b *backend.Backend) *manufacturerView {
 	f := container.New(layout.NewFormLayout())
 	s := container.NewHSplit(l, f)
 	s.SetOffset(0.25)
+
+	// TODO convert to tree structure
+	createTreeItem := func(branch bool) fyne.CanvasObject {
+		if branch {
+		}
+		return widget.NewLabel("")
+	}
+	updateTreeItem := func(di binding.DataItem, branch bool, co fyne.CanvasObject) {}
+	tree := binding.NewUntypedTree()
+	t := widget.NewTreeWithData(tree, createTreeItem, updateTreeItem)
+	t.CloseAllBranches()
+
 	return &manufacturerView{container: s}
 }
 

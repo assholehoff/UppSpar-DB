@@ -1118,6 +1118,7 @@ type Item struct {
 	DateModified binding.String
 	Condition    map[string]any // TODO implement this
 	Properties   map[string]any // TODO implement this
+	branch       bool
 	touched      bool
 }
 
