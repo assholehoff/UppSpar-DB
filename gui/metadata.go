@@ -183,7 +183,14 @@ func newCategoryView(b *backend.Backend) *categoryView {
 	m.form.container = container.New(layout.NewFormLayout(),
 		m.form.labels.name, m.form.entries.name,
 	)
-	m.tree.OnSelected = func(uid widget.TreeNodeID) {}
+	m.tree.OnSelected = func(uid widget.TreeNodeID) {
+		b.Metadata.SelectCategory(b.Metadata.GetCatIDForTreeItem(uid))
+		m.form.Bind(b, b.Metadata.GetCatIDForTreeItem(uid))
+	}
+	m.tree.OnUnselected = func(uid widget.TreeNodeID) {
+		b.Metadata.UnselectCategory(b.Metadata.GetCatIDForTreeItem(uid))
+		m.form.entries.name.Unbind()
+	}
 	m.list.OnSelected = func(id widget.ListItemID) {
 		b.Metadata.SelectCategory(b.Metadata.GetCatIDForListItem(id))
 		m.form.Bind(b, b.Metadata.GetCatIDForListItem(id))

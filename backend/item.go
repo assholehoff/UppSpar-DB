@@ -517,6 +517,7 @@ func (id ItemID) SetCategory() error {
 	if err != nil {
 		return fmt.Errorf("ItemID.SetCategory() error: %w", err)
 	}
+	s = strings.TrimSpace(s)
 	n, err := CatIDFor(s)
 	if err != nil {
 		return fmt.Errorf("ItemID.SetCategory() error: %w", err)

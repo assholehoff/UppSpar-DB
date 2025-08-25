@@ -34,11 +34,20 @@ func newCategory(b *Backend, id CatID) *Category {
 
 func (c *Category) getAllFields() {
 	var Name sql.NullString
-	query := `SELECT Name FROM Category WHERE CatID = @0`
-	c.db.QueryRow(query, c.CatID).Scan(&Name)
+	var ParentID CatID
+	query := `SELECT Name, ParentID FROM Category WHERE CatID = @0`
+	c.db.QueryRow(query, c.CatID).Scan(&Name, &ParentID)
 
 	c.Name = binding.NewString()
 	c.Name.Set(Name.String)
+
+	n, _ := ParentID.Name()
+	c.Parent = binding.NewString()
+	c.Parent.Set(n)
+
+	if c.CatID.Branch() {
+		c.branch = true
+	}
 
 	query = `SELECT ConfigKey, ConfigVal FROM Category_Config WHERE CatID = @0`
 	rows, err := c.db.Query(query, c.CatID)

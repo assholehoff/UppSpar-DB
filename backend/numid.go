@@ -7,9 +7,13 @@ import (
 	"strings"
 )
 
+/* A NumID is an int indentifying a row in a specific SQL table */
 type NumID interface {
+	/* Returns the Name column for the row with the NumID from the relevant SQL table */
 	Name() (string, error)
+	/* Returns the name of the struct, such as "ItemID", "CatID" or "UnitID" */
 	TypeName() string
+	/* Returns a string with the underlying int */
 	String() string
 
 	getBool(key string) (val bool, err error)

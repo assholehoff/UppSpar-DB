@@ -3,6 +3,7 @@ package backend
 import (
 	"database/sql"
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -83,9 +84,32 @@ func (id *CatID) Scan(src any) error {
 func (id CatID) TypeName() string {
 	return "CatID"
 }
+func (id CatID) Branch() bool {
+	var CatID CatID
+	query := `SELECT CatID FROM Category WHERE ParentID = @0 LIMIT 1`
+	err := be.db.QueryRow(query, id).Scan(&CatID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false
+	}
+	return true
+}
 func (id CatID) ParentID() (CatID, error) {
 	val, err := id.getInt("ParentID")
 	return CatID(val), err
+}
+func (id CatID) Children() []CatID {
+	var children []CatID
+	query := `SELECT CatID FROM Category WHERE ParentID = @0 ORDER BY Name ASC`
+	rows, err := be.db.Query(query, id)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		panic(err)
+	}
+	for rows.Next() {
+		var child CatID
+		rows.Scan(&child)
+		children = append(children, child)
+	}
+	return children
 }
 
 /* Returns Name from SQL query */
@@ -119,8 +143,7 @@ func (id CatID) getBool(key string) (val bool, err error) {
 	if b.Valid {
 		val = b.Bool
 	} else {
-		log.Printf("getBool(%s) b is invalid (NULL), err is %v", key, err)
-		err = ErrSQLNullValue
+		log.Printf("CatID.getBool(%s) b is invalid (NULL), err is %v", key, err)
 	}
 	return
 }
@@ -129,8 +152,7 @@ func (id CatID) getFloat(key string) (val float64, err error) {
 	if f.Valid {
 		val = f.Float64
 	} else {
-		log.Printf("getFloat(%s) %s is invalid (NULL), err is %v", key, key, err)
-		err = ErrSQLNullValue
+		log.Printf("CatID.getFloat(%s) %s is invalid (NULL), err is %v", key, key, err)
 	}
 	return
 }
@@ -138,8 +160,7 @@ func (id CatID) getInt(key string) (val int, err error) {
 	i, err := getValue[sql.NullInt64]("Category", id, key)
 	val = int(i.Int64)
 	if !i.Valid {
-		log.Printf("getInt(%s) %s is invalid (NULL), err is %v", key, key, err)
-		err = ErrSQLNullValue
+		log.Printf("CatID.getInt(%s) %s is invalid (NULL), err is %v", key, key, err)
 	}
 	return
 }
@@ -148,8 +169,7 @@ func (id CatID) getString(key string) (val string, err error) {
 	if s.Valid {
 		val = s.String
 	} else {
-		log.Printf("getInt(%s) %s is invalid (NULL), err is %v", key, key, err)
-		err = ErrSQLNullValue
+		log.Printf("CatID.getInt(%s) %s is invalid (NULL), err is %v", key, key, err)
 	}
 	return
 }

@@ -36,7 +36,7 @@ func NewBackend(file string) (*Backend, error) {
 
 	be.Items.GetAllItemIDs()
 
-	be.Metadata.getAllCatIDs()
+	be.Metadata.getCatIDList()
 	be.Metadata.getCatIDTree()
 	be.Metadata.getAllMfrIDs()
 	be.Metadata.getAllModelIDs()

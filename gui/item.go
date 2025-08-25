@@ -3,6 +3,7 @@ package gui
 import (
 	"UppSpar/backend"
 	"log"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -139,7 +140,7 @@ func newItemView(a *App) *itemView {
 			return
 		}
 		b.Items.SelectItem(i)
-		iv.formView.Bind(i)
+		iv.formView.Bind(b, i)
 	}
 	iv.list.OnUnselected = func(id widget.ListItemID) {
 		i, err := b.Items.GetItemIDFor(id)
@@ -343,18 +344,7 @@ type formView struct {
 func newFormView(b *backend.Backend) *formView {
 	var categories []string
 	fetchCategories := func() []string {
-		var cats []string
-		ids, err := b.Metadata.CatIDList.Get()
-		if err != nil {
-			log.Println(err)
-		}
-		for _, id := range ids {
-			cat, err := id.(backend.CatID).Name()
-			if err != nil {
-				log.Println(err)
-			}
-			cats = append(cats, cat)
-		}
+		cats, _ := b.Metadata.Categories.Get()
 		return cats
 	}
 	categories = fetchCategories()
@@ -488,12 +478,11 @@ func newFormView(b *backend.Backend) *formView {
 	return v
 }
 
-func (v formView) Bind(id backend.ItemID) {
+func (v formView) Bind(b *backend.Backend, id backend.ItemID) {
 	v.Clear()
 	v.Enable()
 
 	v.values.ItemID.Bind(id.Item().ItemIDString)
-	// v.values.ItemStatus.Bind(id.Item().ItemStatus)
 	v.values.DateCreated.Bind(id.Item().DateCreated)
 	v.values.DateModified.Bind(id.Item().DateModified)
 	v.values.AddDesc.Bind(id.Item().AddDesc)
@@ -504,8 +493,6 @@ func (v formView) Bind(id backend.ItemID) {
 	v.entries.Vat.Bind(id.Item().VatString)
 	v.entries.ImgURL1.Bind(id.Item().ImgURL1)
 	v.entries.SpecsURL.Bind(id.Item().SpecsURL)
-	// v.entries.adddesc.Bind(id.Item().AddDesc)
-	// v.entries.longdesc.Bind(id.Item().LongDesc)
 	v.entries.Manufacturer.Bind(id.Item().Manufacturer)
 	v.entries.Model.Bind(id.Item().Model)
 	v.entries.ModelURL.Bind(id.Item().ModelURL)
@@ -516,11 +503,18 @@ func (v formView) Bind(id backend.ItemID) {
 	v.entries.Volume.Bind(id.Item().VolumeString)
 	v.entries.Weight.Bind(id.Item().WeightString)
 
-	v.selects.Category.Bind(id.Item().Category)
+	// v.selects.Category.Bind(id.Item().Category)
 	v.selects.LengthUnit.Bind(id.Item().LengthUnit)
 	v.selects.VolumeUnit.Bind(id.Item().VolumeUnit)
 	v.selects.WeightUnit.Bind(id.Item().WeightUnit)
 	v.selects.Status.Bind(id.Item().ItemStatus)
+
+	cat, _ := id.Item().Category.Get()
+	v.selects.Category.SetSelectedIndex(b.Metadata.GetListItemIDFor(cat))
+	v.selects.Category.OnChanged = func(s string) {
+		s = strings.TrimSpace(s)
+		id.Item().Category.Set(s)
+	}
 }
 func (v formView) Clear() {
 	v.entries.Name.Unbind()
@@ -528,8 +522,6 @@ func (v formView) Clear() {
 	v.entries.Vat.Unbind()
 	v.entries.ImgURL1.Unbind()
 	v.entries.SpecsURL.Unbind()
-	// v.entries.adddesc.Unbind()
-	// v.entries.longdesc.Unbind()
 	v.entries.Manufacturer.Unbind()
 	v.entries.Model.Unbind()
 	v.entries.ModelURL.Unbind()
@@ -541,13 +533,12 @@ func (v formView) Clear() {
 	v.entries.Weight.Unbind()
 
 	v.values.ItemID.Unbind()
-	// v.values.ItemStatus.Unbind()
 	v.values.DateCreated.Unbind()
 	v.values.DateModified.Unbind()
 	v.values.AddDesc.Unbind()
 	v.values.LongDesc.Unbind()
 
-	v.selects.Category.Unbind()
+	// v.selects.Category.Unbind()
 	v.selects.LengthUnit.Unbind()
 	v.selects.VolumeUnit.Unbind()
 	v.selects.WeightUnit.Unbind()
@@ -558,8 +549,6 @@ func (v formView) Clear() {
 	v.entries.Vat.SetText("")
 	v.entries.ImgURL1.SetText("")
 	v.entries.SpecsURL.SetText("")
-	// v.entries.adddesc.SetText("")
-	// v.entries.longdesc.SetText("")
 	v.entries.Manufacturer.SetText("")
 	v.entries.Model.SetText("")
 	v.entries.ModelURL.SetText("")
@@ -572,7 +561,6 @@ func (v formView) Clear() {
 	v.entries.Weight.SetText("")
 
 	v.values.ItemID.SetText("0000000000")
-	// v.values.ItemStatus.SetText("")
 	v.values.DateCreated.SetText("")
 	v.values.DateModified.SetText("")
 	v.values.AddDesc.SetText("")
@@ -593,7 +581,6 @@ func (v formView) Disable() {
 	v.entries.Vat.Disable()
 	v.entries.ImgURL1.Disable()
 	v.entries.SpecsURL.Disable()
-	// v.entries.adddesc.Disable()
 	v.entries.LongDesc.Disable()
 	v.entries.Manufacturer.Disable()
 	v.entries.Model.Disable()
@@ -617,7 +604,6 @@ func (v formView) Enable() {
 	v.entries.Vat.Enable()
 	v.entries.ImgURL1.Enable()
 	v.entries.SpecsURL.Enable()
-	// v.entries.adddesc.Enable()
 	v.entries.LongDesc.Enable()
 	v.entries.Manufacturer.Enable()
 	v.entries.Model.Enable()

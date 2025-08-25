@@ -3,6 +3,8 @@ package backend
 import (
 	"fmt"
 	"log"
+	"slices"
+	"strings"
 
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
@@ -17,6 +19,7 @@ type Metadata struct {
 	catSelection binding.UntypedList
 	CatIDList    binding.UntypedList
 	CatIDTree    binding.UntypedTree
+	Categories   binding.StringList
 
 	mfrSelection binding.UntypedList
 	MfrIDList    binding.UntypedList
@@ -41,6 +44,7 @@ func NewMetadata(b *Backend) *Metadata {
 		mfrSelection:   binding.NewUntypedList(),
 		modelSelection: binding.NewUntypedList(),
 
+		Categories:       binding.NewStringList(),
 		CatIDList:        binding.NewUntypedList(),
 		CatIDTree:        binding.NewUntypedTree(),
 		MfrIDList:        binding.NewUntypedList(),
@@ -117,6 +121,16 @@ func (m *Metadata) GetCatIDForListItem(index widget.ListItemID) CatID {
 	}
 	return id.(CatID)
 }
+func (m *Metadata) GetListItemIDFor(s string) widget.ListItemID {
+	cats, err := m.Categories.Get()
+	if err != nil {
+		panic(err)
+	}
+	index := slices.IndexFunc(cats, func(n string) bool {
+		return strings.TrimSpace(n) == strings.TrimSpace(s)
+	})
+	return index
+}
 func (m *Metadata) GetCatIDForTreeItem(index widget.TreeNodeID) CatID {
 	id, err := m.CatIDTree.GetValue(index)
 	if err != nil {
@@ -126,11 +140,11 @@ func (m *Metadata) GetCatIDForTreeItem(index widget.TreeNodeID) CatID {
 	return id.(CatID)
 }
 func (m *Metadata) SelectCategory(id CatID) error {
-	log.Printf("adding %d to selection slice", id)
+	// log.Printf("adding %d to selection slice", id)
 	return m.catSelection.Append(id)
 }
 func (m *Metadata) UnselectCategory(id CatID) error {
-	log.Printf("removing %d from selection slice", id)
+	// log.Printf("removing %d from selection slice", id)
 	return m.catSelection.Remove(id)
 }
 func (m *Metadata) ClearSelection() error {
@@ -138,7 +152,7 @@ func (m *Metadata) ClearSelection() error {
 }
 func (m *Metadata) UpdateCatList() error {
 	// TODO
-	return m.getAllCatIDs()
+	return m.getCatIDList()
 }
 
 func (m *Metadata) findCatIDFor(s string) (CatID, error) {
@@ -164,19 +178,31 @@ func (m *Metadata) findCatIDFor(s string) (CatID, error) {
 	id = CatID(i.Int)
 	return id, nil
 }
-func (m *Metadata) getAllCatIDs() error {
-	query := `SELECT CatID FROM Category ORDER BY Name`
+func (m *Metadata) appendCatIDChildren(id CatID, spc string) {
+	n, _ := id.Name()
+	m.CatIDList.Append(id)
+	m.Categories.Append(spc + n)
+	if !id.Branch() {
+		return
+	}
+	spc += "  "
+	for _, child := range id.Children() {
+		m.appendCatIDChildren(child, spc)
+	}
+}
+func (m *Metadata) getCatIDList() error {
+	query := `SELECT CatID FROM Category WHERE ParentID = 0 ORDER BY Name ASC`
 	rows, err := m.b.db.Query(query)
 	if err != nil {
 		log.Println(err)
 	}
+	m.Categories.Set([]string{})
 	m.CatIDList.Set([]any{})
 	for rows.Next() {
 		var CatID CatID
-
 		rows.Scan(&CatID)
-
-		m.CatIDList.Append(CatID)
+		spc := ""
+		m.appendCatIDChildren(CatID, spc)
 	}
 	return err
 }
