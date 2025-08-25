@@ -94,8 +94,8 @@ Article                 TEXT DEFAULT '',
 Attachments             BOOL DEFAULT false, 
 ItemGroup               TEXT DEFAULT '', 
 -- Custom defined fields --
-ModelID                 INT DEFAULT 0, 
 MfrID                   INT DEFAULT 0, 
+ModelID                 INT DEFAULT 0, 
 Notes                   TEXT DEFAULT '', 
 Width                   REAL DEFAULT 0, 
 Height                  REAL DEFAULT 0, 
@@ -179,8 +179,8 @@ Article                 TEXT,
 Attachments             BOOL, 
 ItemGroup               TEXT, 
 -- Custom defined fields --
-ModelID                 INT, 
 MfrID                   INT, 
+ModelID                 INT, 
 Notes                   TEXT, 
 Width                   REAL, 
 Height                  REAL, 
@@ -437,8 +437,30 @@ FOREIGN KEY(FuncID) REFERENCES Function_Data(FuncID))`)
 func (b *Backend) createCategoryTable() {
 	b.db.Exec(`CREATE TABLE Category(
 CatID INTEGER PRIMARY KEY AUTOINCREMENT, 
+ParentID INT DEFAULT 0,
 Name TEXT DEFAULT 'Ny kategori')`)
-	b.db.Exec(`INSERT INTO Category (Name) VALUES ("Bord"), ("Husgeråd"), ("Hylla"), ("Kontorsstol"), ("Skrivbord"), ("Soffa"), ("Stol"), ("Säng"), ("Övrigt")`)
+	b.db.Exec(`INSERT INTO Category (Name, ParentID) 
+VALUES  ("Administration", 0), 
+        ("Hushåll", 0), 
+        ("Kontor", 0), 
+        ("Tjänster", 0), 
+        ("Övrigt", 0),
+        ("Badrum", 2), 
+        ("Belysning", 5), 
+        ("Bord", 2), 
+        ("Dekor", 5), 
+        ("Elektronik", 3),  
+        ("Förvaring", 3), 
+        ("Husgeråd", 2), 
+        ("Hylla", 3), 
+        ("Kök & vitvaror", 2), 
+        ("Textilier & mattor", 5), 
+        ("Skrivbord", 3), 
+        ("Skåp", 3), 
+        ("Soffor & fåtöljer", 2), 
+        ("Stolar", 3), 
+        ("Tvätt & städ", 5), 
+        ("Sängar & madrasser", 2)`)
 }
 
 func (b *Backend) createMetricTable() {

@@ -83,6 +83,10 @@ func (id *CatID) Scan(src any) error {
 func (id CatID) TypeName() string {
 	return "CatID"
 }
+func (id CatID) ParentID() (CatID, error) {
+	val, err := id.getInt("ParentID")
+	return CatID(val), err
+}
 
 /* Returns Name from SQL query */
 func (id CatID) Name() (val string, err error) {

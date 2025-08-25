@@ -12,6 +12,7 @@ type Category struct {
 	db      *sql.DB
 	CatID   CatID
 	Name    binding.String
+	Parent  binding.String
 	Config  map[string]bool   // which fields to display in form
 	Data    map[string]string // what text to put in spreadsheet
 	branch  bool

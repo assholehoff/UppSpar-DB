@@ -27,10 +27,10 @@ func (a *App) newGui() {
 func (a *App) newAppTabs() {
 	a.gui.tabs = container.NewAppTabs(
 		container.NewTabItemWithIcon(lang.L("Items"), theme.ListIcon(), a.gui.items.container),
-		container.NewTabItemWithIcon(lang.L("Journal"), theme.InfoIcon(), a.gui.journal.container),
 		container.NewTabItemWithIcon(lang.L("Metadata"), theme.StorageIcon(), a.gui.metadata.tabs),
-		container.NewTabItemWithIcon(lang.L("Settings"), theme.SettingsIcon(), a.gui.settings.container),
+		container.NewTabItemWithIcon(lang.L("Journal"), theme.InfoIcon(), a.gui.journal.container),
 		container.NewTabItemWithIcon(lang.L("Wishlist"), theme.MenuIcon(), a.gui.wishlist.container),
+		container.NewTabItemWithIcon(lang.L("Settings"), theme.SettingsIcon(), a.gui.settings.container),
 	)
 	a.gui.tabs.SetTabLocation(container.TabLocationLeading)
 }

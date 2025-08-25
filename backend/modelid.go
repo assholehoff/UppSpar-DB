@@ -126,6 +126,9 @@ func (id ModelID) Depth() (float64, error) {
 func (id ModelID) Weight() (float64, error) {
 	return id.getFloat("Weight")
 }
+func (id ModelID) Volume() (float64, error) {
+	return id.getFloat("Volume")
+}
 func (id ModelID) LengthUnit() (string, error) {
 	val, err := id.getInt("LengthUnitID")
 	return UnitID(val).String(), err
@@ -156,7 +159,7 @@ func (id ModelID) getBool(key string) (val bool, err error) {
 	if b.Valid {
 		val = b.Bool
 	} else {
-		log.Printf("getBool(%s) b is invalid (NULL), err is %v", key, err)
+		log.Printf("ModelID.getBool(%s) b is invalid (NULL), err is %v", key, err)
 		err = ErrSQLNullValue
 	}
 	return
@@ -166,7 +169,7 @@ func (id ModelID) getFloat(key string) (val float64, err error) {
 	if f.Valid {
 		val = f.Float64
 	} else {
-		log.Printf("getFloat(%s) %s is invalid (NULL), err is %v", key, key, err)
+		log.Printf("ModelID.getFloat(%s) %s is invalid (NULL), err is %v", key, key, err)
 		err = ErrSQLNullValue
 	}
 	return
@@ -175,7 +178,7 @@ func (id ModelID) getInt(key string) (val int, err error) {
 	i, err := getValue[sql.NullInt64]("Model", id, key)
 	val = int(i.Int64)
 	if !i.Valid {
-		log.Printf("getInt(%s) %s is invalid (NULL), err is %v", key, key, err)
+		log.Printf("ModelID.getInt(%s) %s is invalid (NULL), err is %v", key, key, err)
 		err = ErrSQLNullValue
 	}
 	return
@@ -185,7 +188,7 @@ func (id ModelID) getString(key string) (val string, err error) {
 	if s.Valid {
 		val = s.String
 	} else {
-		log.Printf("getInt(%s) %s is invalid (NULL), err is %v", key, key, err)
+		log.Printf("ModelID.getInt(%s) %s is invalid (NULL), err is %v", key, key, err)
 		err = ErrSQLNullValue
 	}
 	return

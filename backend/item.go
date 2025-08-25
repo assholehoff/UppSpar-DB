@@ -310,8 +310,16 @@ func (id ItemID) AddDesc() (string, error) {
 func (id ItemID) LongDesc() (string, error) {
 	return id.getString("LongDesc")
 }
+func (id ItemID) MfrID() (MfrID, error) {
+	mid, err := id.getInt("MfrID")
+	return MfrID(mid), err
+}
 func (id ItemID) Manufacturer() (string, error) {
 	return id.getString("Manufacturer")
+}
+func (id ItemID) ModelID() (ModelID, error) {
+	mid, err := id.getInt("ModelID")
+	return ModelID(mid), err
 }
 func (id ItemID) Model() (string, error) {
 	return id.getString("Model")
@@ -628,21 +636,37 @@ func (id ItemID) SetLongDesc() error {
 	}
 	return id.setString(key, val)
 }
+func (id ItemID) SetMfrID(val MfrID) error {
+	key := "MfrID"
+	return id.setInt(key, int(val))
+}
 func (id ItemID) SetManufacturer() error {
-	key := "Manufacturer"
-	val, err := id.Item().Manufacturer.Get()
+	s, err := id.Item().Manufacturer.Get()
 	if err != nil {
 		return fmt.Errorf("ItemID.SetManufacturer() error: %w", err)
 	}
-	return id.setString(key, val)
+	n, err := MfrIDFor(s)
+	if err != nil {
+		return fmt.Errorf("ItemID.SetManufacturer() error: %w", err)
+	}
+	id.Item().MfrID = n
+	return id.SetMfrID(n)
+}
+func (id ItemID) SetModelID(val ModelID) error {
+	key := "ModelID"
+	return id.setInt(key, int(val))
 }
 func (id ItemID) SetModel() error {
-	key := "Model"
-	val, err := id.Item().Model.Get()
+	s, err := id.Item().Model.Get()
 	if err != nil {
 		return fmt.Errorf("ItemID.SetModel() error: %w", err)
 	}
-	return id.setString(key, val)
+	n, err := ModelIDFor(s)
+	if err != nil {
+		return fmt.Errorf("ItemID.SetModel() error: %w", err)
+	}
+	id.Item().ModelID = n
+	return id.SetModelID(n)
 }
 func (id ItemID) SetModelURL() error {
 	key := "ModelURL"
@@ -1094,8 +1118,11 @@ type Item struct {
 	SpecsURL     binding.String
 	AddDesc      binding.String
 	LongDesc     binding.String
+	MfrID        MfrID
 	Manufacturer binding.String
+	ModelID      ModelID
 	Model        binding.String
+	ModelDesc    binding.String
 	ModelURL     binding.String
 	Notes        binding.String
 	widthFloat   binding.Float
@@ -1176,85 +1203,6 @@ func newItem(b *Backend, id ItemID) *Item {
 }
 
 func (t *Item) getAllFields() {
-	var Name, Currency, Unit, ImgURL1, ImgURL2, ImgURL3, ImgURL4, ImgURL5, SpecsURL sql.NullString
-	var AddDesc, LongDesc, Manufacturer, Model, ModelURL, Notes, DateCreated, DateModified sql.NullString
-	var Price, QuantityInPrice, Vat, Stock, Width, Height, Depth, Volume, Weight sql.NullFloat64
-	var Priority sql.NullBool
-	var CatID CatID
-	var LengthUnitID, VolumeUnitID, WeightUnitID UnitID
-	var ItemStatusID ItemStatusID
-
-	query := `SELECT Name, CatID, Price, Currency, QuantityInPrice, Unit, Vat, 
-Priority, Stock, ImgURL1, ImgURL2, ImgURL3, ImgURL4, ImgURL5, SpecsURL, 
-AddDesc, LongDesc, Manufacturer, Model, ModelURL, Notes, 
-Width, Height, Depth, Volume, Weight, 
-LengthUnitID, VolumeUnitID, WeightUnitID, 
-ItemStatusID, DateCreated, DateModified 
-FROM Item WHERE ItemID = @0`
-	stmt, err := t.db.Prepare(query)
-	if err != nil {
-		log.Println(fmt.Errorf("getAllFields error: %w", err))
-	}
-	defer stmt.Close()
-	err = stmt.QueryRow(t.ItemID).Scan(
-		&Name, &CatID, &Price, &Currency, &QuantityInPrice, &Unit, &Vat,
-		&Priority, &Stock, &ImgURL1, &ImgURL2, &ImgURL3, &ImgURL4, &ImgURL5, &SpecsURL,
-		&AddDesc, &LongDesc, &Manufacturer, &Model, &ModelURL, &Notes,
-		&Width, &Height, &Depth, &Volume, &Weight,
-		&LengthUnitID, &VolumeUnitID, &WeightUnitID,
-		&ItemStatusID, &DateCreated, &DateModified,
-	)
-	if err != nil {
-		log.Println("Item.getAllFields() error!")
-		panic(err)
-	}
-
-	category, err := CatID.Name()
-	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			panic(err)
-		} else {
-			log.Println(err)
-			category = ""
-		}
-	}
-	LengthUnitString, err := LengthUnitID.Name()
-	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			panic(err)
-		} else {
-			log.Println(err)
-			LengthUnitString = ""
-		}
-	}
-	VolumeUnitString, err := VolumeUnitID.Name()
-	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			panic(err)
-		} else {
-			log.Println(err)
-			VolumeUnitString = ""
-		}
-	}
-	WeightUnitString, err := WeightUnitID.Name()
-	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			panic(err)
-		} else {
-			log.Println(err)
-			WeightUnitString = ""
-		}
-	}
-	ItemStatusString := ItemStatusID.LString()
-	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			panic(err)
-		} else {
-			log.Println(err)
-			ItemStatusString = ""
-		}
-	}
-
 	t.ItemIDString = binding.NewString()
 	t.Name = binding.NewString()
 	t.Category = binding.NewString()
@@ -1274,6 +1222,7 @@ FROM Item WHERE ItemID = @0`
 	t.LongDesc = binding.NewString()
 	t.Manufacturer = binding.NewString()
 	t.Model = binding.NewString()
+	t.ModelDesc = binding.NewString()
 	t.ModelURL = binding.NewString()
 	t.Notes = binding.NewString()
 	t.widthFloat = binding.NewFloat()
@@ -1288,6 +1237,150 @@ FROM Item WHERE ItemID = @0`
 
 	t.DateCreated = binding.NewString()
 	t.DateModified = binding.NewString()
+
+	var Name, Currency, Unit, ImgURL1, ImgURL2, ImgURL3, ImgURL4, ImgURL5, SpecsURL sql.NullString
+	var AddDesc, LongDesc, Notes, DateCreated, DateModified sql.NullString
+	var Price, QuantityInPrice, Vat, Stock, Width, Height, Depth, Volume, Weight sql.NullFloat64
+	var Priority sql.NullBool
+	var CatID CatID
+	var MfrID MfrID
+	var ModelID ModelID
+	var LengthUnitID, VolumeUnitID, WeightUnitID UnitID
+	var ItemStatusID ItemStatusID
+
+	query := `SELECT Name, CatID, Price, Currency, QuantityInPrice, Unit, Vat, 
+Priority, Stock, ImgURL1, ImgURL2, ImgURL3, ImgURL4, ImgURL5, SpecsURL, 
+AddDesc, LongDesc, MfrID, ModelID, Notes, 
+Width, Height, Depth, Volume, Weight, 
+LengthUnitID, VolumeUnitID, WeightUnitID, 
+ItemStatusID, DateCreated, DateModified 
+FROM Item WHERE ItemID = @0`
+	stmt, err := t.db.Prepare(query)
+	if err != nil {
+		log.Println(fmt.Errorf("getAllFields error: %w", err))
+	}
+	defer stmt.Close()
+	err = stmt.QueryRow(t.ItemID).Scan(
+		&Name, &CatID, &Price, &Currency, &QuantityInPrice, &Unit, &Vat,
+		&Priority, &Stock, &ImgURL1, &ImgURL2, &ImgURL3, &ImgURL4, &ImgURL5, &SpecsURL,
+		&AddDesc, &LongDesc, &MfrID, &ModelID, &Notes,
+		&Width, &Height, &Depth, &Volume, &Weight,
+		&LengthUnitID, &VolumeUnitID, &WeightUnitID,
+		&ItemStatusID, &DateCreated, &DateModified,
+	)
+	if err != nil {
+		log.Println("Item.getAllFields() error!")
+		panic(err)
+	}
+
+	var category, manufacturer, model, modelUrl, modelDesc string
+
+	category, err = CatID.Name()
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		panic(err)
+	}
+
+	manufacturer, err = MfrID.Name()
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		panic(err)
+	}
+
+	model, err = ModelID.Name()
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		panic(err)
+	}
+
+	modelUrl, err = ModelID.ModelURL()
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		panic(err)
+	}
+
+	modelDesc, err = ModelID.Desc()
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		panic(err)
+	}
+
+	width := Width.Float64
+	height := Height.Float64
+	depth := Depth.Float64
+	volume := Volume.Float64
+	weight := Weight.Float64
+
+	LengthUnitString, err := LengthUnitID.Name()
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		panic(err)
+	}
+	VolumeUnitString, err := VolumeUnitID.Name()
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		panic(err)
+	}
+	WeightUnitString, err := WeightUnitID.Name()
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		panic(err)
+	}
+	ItemStatusString := ItemStatusID.LString()
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		panic(err)
+	}
+
+	if ModelID != 0 {
+		if n, _ := ModelID.Name(); model == "" && n != model {
+			model = n
+		}
+		modelCatID, err := ModelID.CatID()
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			panic(err)
+		}
+		if modelCategory, _ := modelCatID.Name(); category == "" && modelCategory != category {
+			category = modelCategory
+		}
+		modelMfrID, err := ModelID.MfrID()
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			panic(err)
+		}
+		if t.MfrID == 0 && modelMfrID != t.MfrID {
+			t.MfrID = modelMfrID
+		}
+		if n, _ := modelMfrID.Name(); manufacturer == "" && n != manufacturer {
+			manufacturer = n
+		}
+		if u, _ := ModelID.ModelURL(); modelUrl == "" && u != modelUrl {
+			modelUrl = u
+		}
+		if d, _ := ModelID.Desc(); modelDesc == "" && d != modelDesc {
+			modelDesc = d
+		}
+		if weight == 0 && height == 0 && depth == 0 {
+			if w, _ := ModelID.Weight(); w != weight {
+				weight = w
+			}
+			if h, _ := ModelID.Height(); h != height {
+				height = h
+			}
+			if d, _ := ModelID.Depth(); d != depth {
+				depth = d
+			}
+			if u, _ := ModelID.LengthUnitID(); u != LengthUnitID {
+				LengthUnitID = u
+			}
+		}
+		if volume == 0 {
+			if v, _ := ModelID.Volume(); v != volume {
+				volume = v
+			}
+			if u, _ := ModelID.VolumeUnitID(); u != VolumeUnitID {
+				VolumeUnitID = u
+			}
+		}
+		if weight == 0 {
+			if w, _ := ModelID.Weight(); w != weight {
+				weight = w
+			}
+			if u, _ := ModelID.WeightUnitID(); u != WeightUnitID {
+				WeightUnitID = u
+			}
+		}
+	}
 
 	t.ItemIDString.Set(t.ItemID.String())
 	t.Name.Set(Name.String)
@@ -1306,15 +1399,16 @@ FROM Item WHERE ItemID = @0`
 	t.SpecsURL.Set(SpecsURL.String)
 	t.AddDesc.Set(AddDesc.String)
 	t.LongDesc.Set(LongDesc.String)
-	t.Manufacturer.Set(Manufacturer.String)
-	t.Model.Set(Model.String)
-	t.ModelURL.Set(ModelURL.String)
+	t.Manufacturer.Set(manufacturer)
+	t.Model.Set(model)
+	t.ModelDesc.Set(modelDesc)
+	t.ModelURL.Set(modelUrl)
 	t.Notes.Set(Notes.String)
-	t.widthFloat.Set(Width.Float64)
-	t.heightFloat.Set(Height.Float64)
-	t.depthFloat.Set(Depth.Float64)
-	t.volumeFloat.Set(Volume.Float64)
-	t.weightFloat.Set(Weight.Float64)
+	t.widthFloat.Set(width)
+	t.heightFloat.Set(height)
+	t.depthFloat.Set(depth)
+	t.volumeFloat.Set(volume)
+	t.weightFloat.Set(weight)
 	t.LengthUnit.Set(LengthUnitString)
 	t.VolumeUnit.Set(VolumeUnitString)
 	t.WeightUnit.Set(WeightUnitString)

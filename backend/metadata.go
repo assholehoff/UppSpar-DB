@@ -16,9 +16,11 @@ type Metadata struct {
 
 	catSelection binding.UntypedList
 	CatIDList    binding.UntypedList
+	CatIDTree    binding.UntypedTree
 
 	mfrSelection binding.UntypedList
 	MfrIDList    binding.UntypedList
+	MfrIDTree    binding.UntypedTree
 
 	// TODO Merge Mfr and Model to a binding.UntypedTree
 
@@ -40,6 +42,7 @@ func NewMetadata(b *Backend) *Metadata {
 		modelSelection: binding.NewUntypedList(),
 
 		CatIDList:        binding.NewUntypedList(),
+		CatIDTree:        binding.NewUntypedTree(),
 		MfrIDList:        binding.NewUntypedList(),
 		ModelIDList:      binding.NewUntypedList(),
 		UnitIDList:       binding.NewUntypedList(),
@@ -69,7 +72,7 @@ func (m *Metadata) CopyCategory() error {
 	}
 	log.Printf("copying %d from selection slice", sid)
 	selectedCatID := sid.(CatID)
-	query := `INSERT INTO Category (Name) SELECT Name FROM Category WHERE CatID = @0`
+	query := `INSERT INTO Category (PrentID, Name) SELECT ParentID, Name FROM Category WHERE CatID = @0`
 	stmt, err := m.b.db.Prepare(query)
 	if err != nil {
 		return fmt.Errorf("Metadata.CopyCategory() error: %w", err)
@@ -106,10 +109,18 @@ func (m *Metadata) DeleteCategory() error {
 	m.CatIDList.Remove(selectedCatID)
 	return err
 }
-func (m *Metadata) GetCatIDFor(index widget.ListItemID) CatID {
+func (m *Metadata) GetCatIDForListItem(index widget.ListItemID) CatID {
 	id, err := m.CatIDList.GetValue(index)
 	if err != nil {
 		log.Println("Metadata.GetCatIDFor(index widget.ListItemID) panic!")
+		panic(err)
+	}
+	return id.(CatID)
+}
+func (m *Metadata) GetCatIDForTreeItem(index widget.TreeNodeID) CatID {
+	id, err := m.CatIDTree.GetValue(index)
+	if err != nil {
+		log.Println("Metadata.GetCatIDForTreeItem(index widget.TreeNodeID) panic!")
 		panic(err)
 	}
 	return id.(CatID)
@@ -155,14 +166,9 @@ func (m *Metadata) findCatIDFor(s string) (CatID, error) {
 }
 func (m *Metadata) getAllCatIDs() error {
 	query := `SELECT CatID FROM Category ORDER BY Name`
-	stmt, err := m.b.db.Prepare(query)
+	rows, err := m.b.db.Query(query)
 	if err != nil {
-		log.Printf("Metadata.getAllCatIDs() error: %v", err)
-	}
-	defer stmt.Close()
-	rows, err := stmt.Query()
-	if err != nil {
-		log.Printf("Metadata.getAllCatIDs() error: %v", err)
+		log.Println(err)
 	}
 	m.CatIDList.Set([]any{})
 	for rows.Next() {
@@ -174,18 +180,59 @@ func (m *Metadata) getAllCatIDs() error {
 	}
 	return err
 }
-func (m *Metadata) getAllMfrIDs()   {}
-func (m *Metadata) getAllModelIDs() {}
+func (m *Metadata) getCatIDTree() error {
+	query := `SELECT CatID, ParentID FROM Category ORDER BY Name`
+	rows, err := m.b.db.Query(query)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	m.CatIDTree.Set(make(map[string][]string), make(map[string]any))
+	for rows.Next() {
+		var CatID, ParentID CatID
+		rows.Scan(&CatID, &ParentID)
+		ps := ""
+		if ParentID.String() != "0" {
+			ps = ParentID.String()
+		}
+		m.CatIDTree.Append(ps, CatID.String(), CatID)
+	}
+	return err
+}
+func (m *Metadata) getAllMfrIDs() {
+	query := `SELECT MfrID FROM Manufacturer`
+	rows, err := m.b.db.Query(query)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	m.MfrIDList.Set([]any{})
+	for rows.Next() {
+		var MfrID MfrID
+		rows.Scan(&MfrID)
+		m.MfrIDList.Append(MfrID)
+	}
+}
+func (m *Metadata) getAllModelIDs() {
+	query := `SELECT ModelID FROM Model`
+	rows, err := m.b.db.Query(query)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	m.ModelIDList.Set([]any{})
+	for rows.Next() {
+		var ModelID ModelID
+		rows.Scan(&ModelID)
+		m.MfrIDList.Append(ModelID)
+	}
+}
 func (m *Metadata) getAllUnitIDs() {
 	query := `SELECT UnitID FROM Metric`
-	stmt, err := m.b.db.Prepare(query)
+	rows, err := m.b.db.Query(query)
 	if err != nil {
-		log.Printf("Metadata.getAllUnitIDs() error: %v", err)
-	}
-	defer stmt.Close()
-	rows, err := stmt.Query()
-	if err != nil {
-		log.Printf("Metadata.getAllUnitIDs() error: %v", err)
+		log.Println(err)
+		return
 	}
 	m.UnitIDList.Set([]any{})
 	for rows.Next() {

@@ -136,15 +136,30 @@ type categoryView struct {
 	container *container.Split
 	form      *categoryFormView
 	list      *widget.List
+	tree      *widget.Tree
 	toolbar   *widget.Toolbar
 }
 
 func newCategoryView(b *backend.Backend) *categoryView {
-	createItem := func() fyne.CanvasObject {
+	createListItem := func() fyne.CanvasObject {
 		l := widget.NewLabel("Template category name")
 		return l
 	}
-	updateItem := func(di binding.DataItem, co fyne.CanvasObject) {
+	updateListItem := func(di binding.DataItem, co fyne.CanvasObject) {
+		v, err := di.(binding.Untyped).Get()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		CatID := v.(backend.CatID)
+		co.(*widget.Label).Bind(CatID.Category().Name)
+	}
+	createTreeItem := func(branch bool) fyne.CanvasObject {
+		if branch {
+		}
+		return widget.NewLabel("Template category name")
+	}
+	updateTreeItem := func(di binding.DataItem, branch bool, co fyne.CanvasObject) {
 		v, err := di.(binding.Untyped).Get()
 		if err != nil {
 			log.Println(err)
@@ -154,7 +169,8 @@ func newCategoryView(b *backend.Backend) *categoryView {
 		co.(*widget.Label).Bind(CatID.Category().Name)
 	}
 	m := &categoryView{
-		list: widget.NewListWithData(b.Metadata.CatIDList, createItem, updateItem),
+		list: widget.NewListWithData(b.Metadata.CatIDList, createListItem, updateListItem),
+		tree: widget.NewTreeWithData(b.Metadata.CatIDTree, createTreeItem, updateTreeItem),
 	}
 	m.form = &categoryFormView{
 		entries: &categoryEntries{
@@ -167,12 +183,13 @@ func newCategoryView(b *backend.Backend) *categoryView {
 	m.form.container = container.New(layout.NewFormLayout(),
 		m.form.labels.name, m.form.entries.name,
 	)
+	m.tree.OnSelected = func(uid widget.TreeNodeID) {}
 	m.list.OnSelected = func(id widget.ListItemID) {
-		b.Metadata.SelectCategory(b.Metadata.GetCatIDFor(id))
-		m.form.Bind(b, b.Metadata.GetCatIDFor(id))
+		b.Metadata.SelectCategory(b.Metadata.GetCatIDForListItem(id))
+		m.form.Bind(b, b.Metadata.GetCatIDForListItem(id))
 	}
 	m.list.OnUnselected = func(id widget.ListItemID) {
-		b.Metadata.UnselectCategory(b.Metadata.GetCatIDFor(id))
+		b.Metadata.UnselectCategory(b.Metadata.GetCatIDForListItem(id))
 		m.form.entries.name.Unbind()
 	}
 	m.toolbar = widget.NewToolbar(
@@ -207,7 +224,7 @@ func newCategoryView(b *backend.Backend) *categoryView {
 			}()
 		}),
 	)
-	listView := container.NewBorder(m.toolbar, nil, nil, nil, m.list)
+	listView := container.NewBorder(m.toolbar, nil, nil, nil, m.tree)
 	m.container = container.NewHSplit(listView, m.form.container)
 	m.container.SetOffset(0.25)
 	return m
