@@ -263,8 +263,8 @@ VALUES ("available"), ("sold"), ("archived"), ("deleted")`)
 		log.Printf("!slices.Contains(tables \"Manufacturer\")")
 		b.db.Exec(`CREATE TABLE Manufacturer(
 MfrID INTEGER PRIMARY KEY AUTOINCREMENT, 
-Name TEXT DEFAULT 'Ny tillverkare'),
-Deleted BOOL DEFAULT false`)
+Name TEXT DEFAULT 'Ny tillverkare',
+Deleted BOOL DEFAULT false)`)
 		b.db.Exec(`INSERT INTO Manufacturer (Name) 
 VALUES ("UppSpar"), ("IKEA"), ("Kinnarps")`)
 		touched = true
