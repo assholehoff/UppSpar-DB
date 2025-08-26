@@ -15,6 +15,8 @@ type NumID interface {
 	TypeName() string
 	/* Returns a string with the underlying int */
 	String() string
+	/* Returns a tree-friendly identifier string */
+	TString() string
 
 	getBool(key string) (val bool, err error)
 	getFloat(key string) (val float64, err error)

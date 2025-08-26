@@ -1,6 +1,8 @@
 package backend
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"slices"
@@ -16,19 +18,16 @@ type Metadata struct {
 	mfrData      map[MfrID]*Manufacturer
 	modelData    map[ModelID]*Model
 
-	catSelection binding.UntypedList
-	CatIDList    binding.UntypedList
-	CatIDTree    binding.UntypedTree
-	Categories   binding.StringList
-
-	mfrSelection binding.UntypedList
-	MfrIDList    binding.UntypedList
-	MfrIDTree    binding.UntypedTree
-
-	// TODO Merge Mfr and Model to a binding.UntypedTree
-
+	catSelection   binding.UntypedList
+	mfrSelection   binding.UntypedList
 	modelSelection binding.UntypedList
-	ModelIDList    binding.UntypedList
+
+	CatIDList   binding.UntypedList
+	CatIDTree   binding.UntypedTree
+	Categories  binding.StringList
+	MfrIDList   binding.UntypedList
+	ModelIDList binding.UntypedList
+	ProductTree binding.StringTree
 
 	UnitIDList       binding.UntypedList
 	ItemStatusIDList binding.UntypedList
@@ -49,6 +48,7 @@ func NewMetadata(b *Backend) *Metadata {
 		CatIDTree:        binding.NewUntypedTree(),
 		MfrIDList:        binding.NewUntypedList(),
 		ModelIDList:      binding.NewUntypedList(),
+		ProductTree:      binding.NewStringTree(),
 		UnitIDList:       binding.NewUntypedList(),
 		ItemStatusIDList: binding.NewUntypedList(),
 	}
@@ -155,6 +155,51 @@ func (m *Metadata) UpdateCatList() error {
 	return m.getCatIDList()
 }
 
+func (m *Metadata) GetProductTree() error {
+	// TODO break this thing up
+	query := `SELECT MfrID FROM Manufacturer ORDER BY Name ASC`
+	rows, err := m.b.db.Query(query)
+	if err != nil {
+		log.Println(err)
+		if !errors.Is(err, sql.ErrNoRows) {
+			panic(err)
+		}
+	}
+	defer rows.Close()
+	m.ProductTree.Set(make(map[string][]string), make(map[string]string))
+	for rows.Next() {
+		var MfrID MfrID
+		err := rows.Scan(&MfrID)
+		if err != nil {
+			panic(err)
+		}
+		name, _ := MfrID.Name()
+		m.ProductTree.Append("", MfrID.TString(), name)
+		if MfrID.Branch() {
+			query := `SELECT ModelID FROM Model WHERE MfrID = @0 ORDER BY Name ASC`
+			rows, err := m.b.db.Query(query, MfrID)
+			if err != nil {
+				log.Println(err)
+				if !errors.Is(err, sql.ErrNoRows) {
+					panic(err)
+				}
+			}
+			defer rows.Close()
+			for rows.Next() {
+				var ModelID ModelID
+				err := rows.Scan(&ModelID)
+				if err != nil {
+					panic(err)
+				}
+				name, _ := ModelID.Name()
+				m.ProductTree.Append(MfrID.TString(), ModelID.TString(), name)
+			}
+		}
+	}
+	// TODO add orphans
+	return nil
+}
+
 func (m *Metadata) findCatIDFor(s string) (CatID, error) {
 	var i NullInt
 	var id CatID
@@ -178,7 +223,7 @@ func (m *Metadata) findCatIDFor(s string) (CatID, error) {
 	id = CatID(i.Int)
 	return id, nil
 }
-func (m *Metadata) appendCatIDChildren(id CatID, spc string) {
+func (m *Metadata) appendCatIDAndChildren(id CatID, spc string) {
 	n, _ := id.Name()
 	m.CatIDList.Append(id)
 	m.Categories.Append(spc + n)
@@ -187,7 +232,7 @@ func (m *Metadata) appendCatIDChildren(id CatID, spc string) {
 	}
 	spc += "  "
 	for _, child := range id.Children() {
-		m.appendCatIDChildren(child, spc)
+		m.appendCatIDAndChildren(child, spc)
 	}
 }
 func (m *Metadata) getCatIDList() error {
@@ -202,7 +247,7 @@ func (m *Metadata) getCatIDList() error {
 		var CatID CatID
 		rows.Scan(&CatID)
 		spc := ""
-		m.appendCatIDChildren(CatID, spc)
+		m.appendCatIDAndChildren(CatID, spc)
 	}
 	return err
 }
@@ -226,7 +271,7 @@ func (m *Metadata) getCatIDTree() error {
 	return err
 }
 func (m *Metadata) getAllMfrIDs() {
-	query := `SELECT MfrID FROM Manufacturer`
+	query := `SELECT MfrID FROM Manufacturer ORDER BY Name ASC`
 	rows, err := m.b.db.Query(query)
 	if err != nil {
 		log.Println(err)
@@ -250,7 +295,7 @@ func (m *Metadata) getAllModelIDs() {
 	for rows.Next() {
 		var ModelID ModelID
 		rows.Scan(&ModelID)
-		m.MfrIDList.Append(ModelID)
+		m.ModelIDList.Append(ModelID)
 	}
 }
 func (m *Metadata) getAllUnitIDs() {

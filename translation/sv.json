@@ -12,6 +12,7 @@
     "Metadata" : "Metadata",
     "Models" : "Modeller",
     "New" : "Ny",
+    "None" : "Ingen",
     "Open" : "Öppna",
     "Open existing or create new database?" : "Öppna existerande eller skapa ny databas?",
     "Open database" : "Öppna databas",
@@ -79,8 +80,11 @@
 
     "label.vat" : "moms",
 
+    "metadata.category.check.price" : "Visa pris",
+
     "metadata.subtitle.categories" : "Kategorier",
     "metadata.form.name" : "Namn",
+    "metadata.form.parent" : "Överordnad",
 
     "settings.title" : "Inställningar",
     

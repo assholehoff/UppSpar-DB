@@ -89,22 +89,18 @@ type modelView struct {
 }
 
 func newModelView(b *backend.Backend) *modelView {
-	createItem := func() fyne.CanvasObject {
-		l := widget.NewLabel("Template category name")
-		return l
+	createItem := func(branch bool) fyne.CanvasObject {
+		// if branch {
+		// 	return widget.NewLabel("Template product name")
+		// }
+		return widget.NewLabel("Template category name")
 	}
-	updateItem := func(di binding.DataItem, co fyne.CanvasObject) {
-		v, err := di.(binding.Untyped).Get()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		ModelID := v.(backend.ModelID)
-		co.(*widget.Label).Bind(ModelID.Model().Name)
+	updateItem := func(di binding.DataItem, branch bool, co fyne.CanvasObject) {
+		co.(*widget.Label).Bind(di.(binding.String))
 	}
-	l := widget.NewListWithData(b.Metadata.ModelIDList, createItem, updateItem)
+	t := widget.NewTreeWithData(b.Metadata.ProductTree, createItem, updateItem)
 	f := container.New(layout.NewFormLayout())
-	s := container.NewHSplit(l, f)
+	s := container.NewHSplit(t, f)
 	s.SetOffset(0.25)
 	return &modelView{container: s}
 }
@@ -118,42 +114,30 @@ type categoryEntries struct {
 }
 
 type categoryLabels struct {
-	name *midget.Label
+	name   *midget.Label
+	parent *midget.Label
 }
 
 type categorySelects struct {
+	parent *widget.Select
 }
 
 type categoryFormView struct {
 	container *fyne.Container
-	checks    *struct{}
+	checks    *categoryChecks
 	entries   *categoryEntries
 	labels    *categoryLabels
-	selects   *struct{}
+	selects   *categorySelects
 }
 
 type categoryView struct {
 	container *container.Split
 	form      *categoryFormView
-	list      *widget.List
 	tree      *widget.Tree
 	toolbar   *widget.Toolbar
 }
 
 func newCategoryView(b *backend.Backend) *categoryView {
-	createListItem := func() fyne.CanvasObject {
-		l := widget.NewLabel("Template category name")
-		return l
-	}
-	updateListItem := func(di binding.DataItem, co fyne.CanvasObject) {
-		v, err := di.(binding.Untyped).Get()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		CatID := v.(backend.CatID)
-		co.(*widget.Label).Bind(CatID.Category().Name)
-	}
 	createTreeItem := func(branch bool) fyne.CanvasObject {
 		if branch {
 		}
@@ -169,19 +153,27 @@ func newCategoryView(b *backend.Backend) *categoryView {
 		co.(*widget.Label).Bind(CatID.Category().Name)
 	}
 	m := &categoryView{
-		list: widget.NewListWithData(b.Metadata.CatIDList, createListItem, updateListItem),
 		tree: widget.NewTreeWithData(b.Metadata.CatIDTree, createTreeItem, updateTreeItem),
 	}
 	m.form = &categoryFormView{
+		checks: &categoryChecks{
+			price: ttw.NewCheck(lang.X("metadata.category.check.price", "metadata.category.check.price"), func(b bool) {}),
+		},
 		entries: &categoryEntries{
 			name: xwidget.NewCompletionEntry([]string{}),
 		},
 		labels: &categoryLabels{
-			name: midget.NewLabel(lang.X("metadata.form.name", "metadata.form.name"), "", ""),
+			name:   midget.NewLabel(lang.X("metadata.form.name", "metadata.form.name"), "", ""),
+			parent: midget.NewLabel(lang.X("metadata.form.parent", "metadata.form.parent"), "", ""),
+		},
+		selects: &categorySelects{
+			parent: widget.NewSelect([]string{lang.L("None")}, func(s string) {}),
 		},
 	}
 	m.form.container = container.New(layout.NewFormLayout(),
+		m.form.labels.parent, m.form.selects.parent,
 		m.form.labels.name, m.form.entries.name,
+		layout.NewSpacer(), m.form.checks.price,
 	)
 	m.tree.OnSelected = func(uid widget.TreeNodeID) {
 		b.Metadata.SelectCategory(b.Metadata.GetCatIDForTreeItem(uid))
@@ -189,14 +181,6 @@ func newCategoryView(b *backend.Backend) *categoryView {
 	}
 	m.tree.OnUnselected = func(uid widget.TreeNodeID) {
 		b.Metadata.UnselectCategory(b.Metadata.GetCatIDForTreeItem(uid))
-		m.form.entries.name.Unbind()
-	}
-	m.list.OnSelected = func(id widget.ListItemID) {
-		b.Metadata.SelectCategory(b.Metadata.GetCatIDForListItem(id))
-		m.form.Bind(b, b.Metadata.GetCatIDForListItem(id))
-	}
-	m.list.OnUnselected = func(id widget.ListItemID) {
-		b.Metadata.UnselectCategory(b.Metadata.GetCatIDForListItem(id))
 		m.form.entries.name.Unbind()
 	}
 	m.toolbar = widget.NewToolbar(

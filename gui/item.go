@@ -3,7 +3,6 @@ package gui
 import (
 	"UppSpar/backend"
 	"log"
-	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -296,6 +295,7 @@ type formLabels struct {
 	ItemID        *widget.Label
 	Name          *widget.Label
 	Category      *widget.Label
+	Currency      *widget.Label
 	Price         *widget.Label
 	Vat           *widget.Label
 	ImgURL1       *widget.Label
@@ -388,6 +388,7 @@ func newFormView(b *backend.Backend) *formView {
 			ItemID:       widget.NewLabel(lang.X("item.form.label.itemid", "item.form.label.itemid")),
 			Name:         widget.NewLabel(lang.X("item.form.label.name", "item.form.label.name")),
 			Category:     widget.NewLabel(lang.X("item.form.label.category", "item.form.label.category")),
+			Currency:     widget.NewLabel("SEK"),
 			Price:        widget.NewLabel(lang.X("item.form.label.price", "item.form.label.price")),
 			Vat:          widget.NewLabel(lang.X("item.form.label.vat", "item.form.label.vat")),
 			ImgURL1:      widget.NewLabel(lang.X("item.form.label.imgurl", "item.form.label.imgurl")),
@@ -465,7 +466,7 @@ func newFormView(b *backend.Backend) *formView {
 		// v.labels.longdesc, v.entries.longdesc,
 		v.labels.Dimensions, spacebox,
 		layout.NewSpacer(), massbox,
-		v.labels.Price, container.NewBorder(nil, nil, nil, midget.NewLabel("SEK", "", ""), v.entries.Price),
+		v.labels.Price, container.NewBorder(nil, nil, nil, v.labels.Currency, v.entries.Price),
 		// v.labels.adddesc, v.entries.adddesc,
 		v.labels.ImgURL1, v.entries.ImgURL1,
 		v.labels.Notes, v.entries.Notes,
@@ -503,17 +504,21 @@ func (v formView) Bind(b *backend.Backend, id backend.ItemID) {
 	v.entries.Volume.Bind(id.Item().VolumeString)
 	v.entries.Weight.Bind(id.Item().WeightString)
 
-	// v.selects.Category.Bind(id.Item().Category)
+	v.selects.Category.Bind(id.Item().Category)
 	v.selects.LengthUnit.Bind(id.Item().LengthUnit)
 	v.selects.VolumeUnit.Bind(id.Item().VolumeUnit)
 	v.selects.WeightUnit.Bind(id.Item().WeightUnit)
 	v.selects.Status.Bind(id.Item().ItemStatus)
 
+	/* This step is needed because child categories have spaces prepended to them in the select list */
 	cat, _ := id.Item().Category.Get()
 	v.selects.Category.SetSelectedIndex(b.Metadata.GetListItemIDFor(cat))
-	v.selects.Category.OnChanged = func(s string) {
-		s = strings.TrimSpace(s)
-		id.Item().Category.Set(s)
+
+	// TODO dynamically show/hide more fields depending on category configuration
+	if id.Item().CatID.ShowPrice() {
+		v.showPrice()
+	} else {
+		v.hidePrice()
 	}
 }
 func (v formView) Clear() {
@@ -538,7 +543,7 @@ func (v formView) Clear() {
 	v.values.AddDesc.Unbind()
 	v.values.LongDesc.Unbind()
 
-	// v.selects.Category.Unbind()
+	v.selects.Category.Unbind()
 	v.selects.LengthUnit.Unbind()
 	v.selects.VolumeUnit.Unbind()
 	v.selects.WeightUnit.Unbind()
@@ -620,4 +625,15 @@ func (v formView) Enable() {
 	v.selects.VolumeUnit.Enable()
 	v.selects.WeightUnit.Enable()
 	v.selects.Status.Enable()
+}
+
+func (v *formView) showPrice() {
+	v.entries.Price.Show()
+	v.labels.Currency.Show()
+	v.labels.Price.Show()
+}
+func (v *formView) hidePrice() {
+	v.entries.Price.Hide()
+	v.labels.Currency.Hide()
+	v.labels.Price.Hide()
 }

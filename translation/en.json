@@ -79,8 +79,11 @@
 
     "label.vat" : "VAT",
 
+    "metadata.category.check.price" : "Show price",
+
     "metadata.subtitle.categories" : "Categories",
     "metadata.form.name" : "Name",
+    "metadata.form.parent" : "Parent",
 
     "settings.title" : "Settings",
 

@@ -25,6 +25,11 @@ func (id CatID) String() string {
 	return fmt.Sprintf("%d", id)
 }
 
+/* Returns a tree-friendly identifying string */
+func (id CatID) TString() string {
+	return fmt.Sprintf("CAT-%d", id)
+}
+
 /* Value implements driver.Valuer. */
 func (id CatID) Value() (driver.Value, error) {
 	return int64(id), nil
@@ -88,10 +93,7 @@ func (id CatID) Branch() bool {
 	var CatID CatID
 	query := `SELECT CatID FROM Category WHERE ParentID = @0 LIMIT 1`
 	err := be.db.QueryRow(query, id).Scan(&CatID)
-	if errors.Is(err, sql.ErrNoRows) {
-		return false
-	}
-	return true
+	return !errors.Is(err, sql.ErrNoRows)
 }
 func (id CatID) ParentID() (CatID, error) {
 	val, err := id.getInt("ParentID")
@@ -128,6 +130,13 @@ func (id CatID) SetName() error {
 
 func (id CatID) Category() *Category {
 	return getCategory(be, id)
+}
+func (id CatID) ShowPrice() bool {
+	// TODO fix this lazy s..t
+	if id == CatID(1) {
+		return true
+	}
+	return false
 }
 
 /* Get the pointer to Category from map or make one and return it */

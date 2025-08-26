@@ -16,6 +16,7 @@ type Category struct {
 	Config  map[string]bool   // which fields to display in form
 	Data    map[string]string // what text to put in spreadsheet
 	branch  bool
+	priced  bool
 	touched bool
 }
 
@@ -47,6 +48,10 @@ func (c *Category) getAllFields() {
 
 	if c.CatID.Branch() {
 		c.branch = true
+	}
+
+	if c.CatID == CatID(0) {
+		c.priced = true
 	}
 
 	query = `SELECT ConfigKey, ConfigVal FROM Category_Config WHERE CatID = @0`

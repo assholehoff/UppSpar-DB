@@ -19,6 +19,11 @@ func (id ModelID) String() string {
 	return fmt.Sprintf("%d", id)
 }
 
+/* Returns a tree-friendly identifying string */
+func (id ModelID) TString() string {
+	return fmt.Sprintf("MDL-%d", id)
+}
+
 /* Value implements driver.Valuer. */
 func (id ModelID) Value() (driver.Value, error) {
 	return int64(id), nil

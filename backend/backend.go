@@ -40,6 +40,7 @@ func NewBackend(file string) (*Backend, error) {
 	be.Metadata.getCatIDTree()
 	be.Metadata.getAllMfrIDs()
 	be.Metadata.getAllModelIDs()
+	be.Metadata.GetProductTree()
 	be.Metadata.getAllUnitIDs()
 	be.Metadata.getAllItemStatusIDs()
 
@@ -57,9 +58,11 @@ func ItemIDWidth() int {
 	return be.Settings.getItemIDWidth()
 }
 func CatIDFor(s string) (CatID, error) {
+	// TODO handle when database contains multiple rows with 's'
 	return be.Metadata.findCatIDFor(s)
 }
 func MfrIDFor(s string) (MfrID, error) {
+	// TODO handle when database contains multiple rows with 's'
 	var i NullInt
 	var id MfrID
 
@@ -79,6 +82,7 @@ func MfrIDFor(s string) (MfrID, error) {
 	return id, nil
 }
 func ModelIDFor(s string) (ModelID, error) {
+	// TODO handle when database contains multiple rows with 's'
 	var i NullInt
 	var id ModelID
 

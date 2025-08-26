@@ -235,6 +235,11 @@ func (id ItemID) Value() (driver.Value, error) {
 func (id ItemID) String() string {
 	return fmt.Sprintf("%0*d", ItemIDWidth(), id)
 }
+
+/* Returns a tree-friendly identifying string */
+func (id ItemID) TString() string {
+	return fmt.Sprintf("ITEM-%d", id)
+}
 func (id ItemID) Int() int {
 	return int(id)
 }
@@ -517,7 +522,9 @@ func (id ItemID) SetCategory() error {
 	if err != nil {
 		return fmt.Errorf("ItemID.SetCategory() error: %w", err)
 	}
+	log.Printf("SetCategory: \"%s\"", s)
 	s = strings.TrimSpace(s)
+	log.Printf("SetCategory: \"%s\"", s)
 	n, err := CatIDFor(s)
 	if err != nil {
 		return fmt.Errorf("ItemID.SetCategory() error: %w", err)
@@ -842,6 +849,7 @@ func (id ItemID) setFloat(key string, val float64) error {
 }
 func (id ItemID) setInt(key string, val int) error {
 	err := setValue("Item", id, key, val)
+	log.Printf("set %s to %v", key, val)
 	id.updateDateModified()
 	return err
 }
@@ -1140,13 +1148,12 @@ type Item struct {
 	VolumeUnit   binding.String
 	WeightUnit   binding.String
 	ItemStatus   binding.String
-	dateCreated  time.Time
-	dateModified time.Time
 	DateCreated  binding.String
 	DateModified binding.String
 	Condition    map[string]any // TODO implement this
 	Properties   map[string]any // TODO implement this
 	branch       bool
+	priced       bool
 	touched      bool
 }
 
@@ -1249,7 +1256,8 @@ func (t *Item) getAllFields() {
 	var LengthUnitID, VolumeUnitID, WeightUnitID UnitID
 	var ItemStatusID ItemStatusID
 
-	query := `SELECT Name, CatID, Price, Currency, QuantityInPrice, Unit, Vat, 
+	query := `SELECT 
+Name, CatID, Price, Currency, QuantityInPrice, Unit, Vat, 
 Priority, Stock, ImgURL1, ImgURL2, ImgURL3, ImgURL4, ImgURL5, SpecsURL, 
 AddDesc, LongDesc, MfrID, ModelID, Notes, 
 Width, Height, Depth, Volume, Weight, 
