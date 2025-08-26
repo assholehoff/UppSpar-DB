@@ -81,6 +81,9 @@
     "label.vat" : "moms",
 
     "metadata.category.check.price" : "Visa pris",
+    "metadata.category.check.length" : "Visa mått",
+    "metadata.category.check.volume" : "Visa volym",
+    "metadata.category.check.weight" : "Visa vikt",
 
     "metadata.subtitle.categories" : "Kategorier",
     "metadata.form.name" : "Namn",

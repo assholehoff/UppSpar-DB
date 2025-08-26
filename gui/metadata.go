@@ -106,7 +106,10 @@ func newModelView(b *backend.Backend) *modelView {
 }
 
 type categoryChecks struct {
-	price *ttw.Check
+	price  *ttw.Check
+	length *ttw.Check
+	volume *ttw.Check
+	weight *ttw.Check
 }
 
 type categoryEntries struct {
@@ -157,7 +160,10 @@ func newCategoryView(b *backend.Backend) *categoryView {
 	}
 	m.form = &categoryFormView{
 		checks: &categoryChecks{
-			price: ttw.NewCheck(lang.X("metadata.category.check.price", "metadata.category.check.price"), func(b bool) {}),
+			price:  ttw.NewCheck(lang.X("metadata.category.check.price", "metadata.category.check.price"), func(b bool) {}),
+			length: ttw.NewCheck(lang.X("metadata.category.check.length", "metadata.category.check.length"), func(b bool) {}),
+			volume: ttw.NewCheck(lang.X("metadata.category.check.volume", "metadata.category.check.volume"), func(b bool) {}),
+			weight: ttw.NewCheck(lang.X("metadata.category.check.weight", "metadata.category.check.weight"), func(b bool) {}),
 		},
 		entries: &categoryEntries{
 			name: xwidget.NewCompletionEntry([]string{}),
@@ -174,6 +180,9 @@ func newCategoryView(b *backend.Backend) *categoryView {
 		m.form.labels.parent, m.form.selects.parent,
 		m.form.labels.name, m.form.entries.name,
 		layout.NewSpacer(), m.form.checks.price,
+		layout.NewSpacer(), m.form.checks.length,
+		layout.NewSpacer(), m.form.checks.volume,
+		layout.NewSpacer(), m.form.checks.weight,
 	)
 	m.tree.OnSelected = func(uid widget.TreeNodeID) {
 		b.Metadata.SelectCategory(b.Metadata.GetCatIDForTreeItem(uid))
@@ -223,5 +232,9 @@ func newCategoryView(b *backend.Backend) *categoryView {
 
 func (m *categoryFormView) Bind(b *backend.Backend, id backend.CatID) {
 	m.entries.name.Bind(id.Category().Name)
+	m.checks.price.Bind(id.Category().Config["ShowPrice"])
+	m.checks.length.Bind(id.Category().Config["ShowLength"])
+	m.checks.volume.Bind(id.Category().Config["ShowVolume"])
+	m.checks.weight.Bind(id.Category().Config["ShowWeight"])
 	id.Category().Name.AddListener(binding.NewDataListener(func() { b.Metadata.UpdateCatList() }))
 }

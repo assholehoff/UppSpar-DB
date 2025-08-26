@@ -80,7 +80,7 @@ func (id *CatID) Scan(src any) error {
 			return ErrLossyConversion
 		}
 	default:
-		log.Printf("ItemID.Scan(%v) error: unknown type %s", src, reflect.TypeOf(src).Name())
+		log.Printf("ItemID(%d).Scan(%v) unknown type %s", id, src, reflect.TypeOf(src).Name())
 		return ErrInvalidType
 	}
 	return nil
@@ -132,11 +132,26 @@ func (id CatID) Category() *Category {
 	return getCategory(be, id)
 }
 func (id CatID) ShowPrice() bool {
-	// TODO fix this lazy s..t
-	if id == CatID(1) {
-		return true
+	b, err := id.getConfig("ShowPrice")
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		log.Printf("CatID(%d).ShowPrice() error: %v", id, err)
 	}
-	return false
+	return b
+}
+func (id CatID) getConfig(key string) (val bool, err error) {
+	query := `SELECT ConfigVal FROM Category_Config WHERE CatID = @0 AND ConfigKey = @1`
+	var b sql.NullBool
+	err = be.db.QueryRow(query, id, key).Scan(&b)
+	if errors.Is(err, sql.ErrNoRows) {
+		err = id.createConfigKey(key)
+	}
+	if b.Valid {
+		val = b.Bool
+	} else {
+		log.Printf("CatID(%d).getConfig(%s) b is invalid!", id, key)
+	}
+	// log.Printf("CatID(%d).getConfig(%s) returned %v", id, key, b.Bool)
+	return
 }
 
 /* Get the pointer to Category from map or make one and return it */
@@ -152,7 +167,7 @@ func (id CatID) getBool(key string) (val bool, err error) {
 	if b.Valid {
 		val = b.Bool
 	} else {
-		log.Printf("CatID.getBool(%s) b is invalid (NULL), err is %v", key, err)
+		log.Printf("CatID(%d).getBool(%s) error: %v", id, key, err)
 	}
 	return
 }
@@ -161,7 +176,7 @@ func (id CatID) getFloat(key string) (val float64, err error) {
 	if f.Valid {
 		val = f.Float64
 	} else {
-		log.Printf("CatID.getFloat(%s) %s is invalid (NULL), err is %v", key, key, err)
+		log.Printf("CatID(%d).getFloat(%s) error: %v", id, key, err)
 	}
 	return
 }
@@ -169,7 +184,7 @@ func (id CatID) getInt(key string) (val int, err error) {
 	i, err := getValue[sql.NullInt64]("Category", id, key)
 	val = int(i.Int64)
 	if !i.Valid {
-		log.Printf("CatID.getInt(%s) %s is invalid (NULL), err is %v", key, key, err)
+		log.Printf("CatID(%d).getInt(%s) error: %v", id, key, err)
 	}
 	return
 }
@@ -178,9 +193,21 @@ func (id CatID) getString(key string) (val string, err error) {
 	if s.Valid {
 		val = s.String
 	} else {
-		log.Printf("CatID.getInt(%s) %s is invalid (NULL), err is %v", key, key, err)
+		log.Printf("CatID(%d).getString(%s) error: %v", id, key, err)
 	}
 	return
+}
+func (id CatID) createConfigKey(key string) error {
+	query := `INSERT INTO Category_Config (CatID, ConfigKey, ConfigVal) VALUES (@0, @1, false)`
+	_, err := be.db.Exec(query, id, key)
+	// log.Printf("createConfigKey(%s) returned %v", key, err)
+	return err
+}
+func (id CatID) setConfig(key string, val bool) error {
+	query := `UPDATE Category_Config SET ConfigVal = @0 WHERE CatID = @1 AND ConfigKey = @2`
+	_, err := be.db.Exec(query, val, id, key)
+	// log.Printf("CatID(%d).setConfig(%s, %v) returned %v", id, key, val, err)
+	return err
 }
 func (id CatID) setBool(key string, val bool) error {
 	err := setValue("Category", id, key, val)

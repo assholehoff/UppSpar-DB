@@ -80,6 +80,9 @@
     "label.vat" : "VAT",
 
     "metadata.category.check.price" : "Show price",
+    "metadata.category.check.length" : "Show measurements",
+    "metadata.category.check.volume" : "Show volume",
+    "metadata.category.check.weight" : "Show weight",
 
     "metadata.subtitle.categories" : "Categories",
     "metadata.form.name" : "Name",

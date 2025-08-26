@@ -20,6 +20,7 @@ import (
 )
 
 type itemView struct {
+	bound     backend.ItemID
 	container *fyne.Container
 	formView  *formView
 	toolbar   *fyne.Container
@@ -139,7 +140,7 @@ func newItemView(a *App) *itemView {
 			return
 		}
 		b.Items.SelectItem(i)
-		iv.formView.Bind(b, i)
+		// iv.formView.Bind(b, i)
 	}
 	iv.list.OnUnselected = func(id widget.ListItemID) {
 		i, err := b.Items.GetItemIDFor(id)
@@ -149,8 +150,34 @@ func newItemView(a *App) *itemView {
 			return
 		}
 		b.Items.UnselectItem(i)
-		iv.formView.Clear()
+		// iv.formView.Clear()
 	}
+	b.Items.ItemIDSelection.AddListener(binding.NewDataListener(func() {
+		ids, err := b.Items.ItemIDSelection.Get()
+		if err != nil {
+			log.Println(err)
+			iv.formView.Clear()
+			return
+		}
+		if len(ids) < 1 {
+			iv.formView.Clear()
+			return
+		}
+		if len(ids) == 1 {
+			if iv.bound == ids[0].(backend.ItemID) {
+				return
+			}
+			iv.formView.Clear()
+			iv.formView.Bind(b, ids[0].(backend.ItemID))
+			return
+		}
+		if len(ids) > 1 {
+			iv.formView.Clear()
+			// TODO bind a dummy structure to edit multiple as one
+			iv.formView.Bind(b, ids[0].(backend.ItemID))
+			return
+		}
+	}))
 	searchEntry := xwidget.NewCompletionEntry([]string{})
 	searchEntry.Bind(b.Items.SearchString)
 	searchEntry.OnChanged = func(s string) {
@@ -433,9 +460,6 @@ func newFormView(b *backend.Backend) *formView {
 		v.selects.Category.Options = categories
 		v.selects.Category.Refresh()
 	}))
-	// v.entries.adddesc.MultiLine = true
-	// v.entries.adddesc.SetMinRowsVisible(2)
-	// v.entries.adddesc.Wrapping = fyne.TextWrapWord
 	v.entries.LongDesc.MultiLine = true
 	v.entries.LongDesc.SetMinRowsVisible(5)
 	v.entries.LongDesc.Wrapping = fyne.TextWrapWord
@@ -457,17 +481,14 @@ func newFormView(b *backend.Backend) *formView {
 		layout.NewSpacer(), container.NewHBox(v.labels.DateCreated, v.values.DateCreated),
 		layout.NewSpacer(), container.NewHBox(v.labels.DateModified, v.values.DateModified),
 		v.labels.ItemID, idbox,
-		// layout.NewSpacer(), v.selects.Status,
 		v.labels.Name, v.entries.Name,
 		v.labels.Category, v.selects.Category,
 		v.labels.Manufacturer, v.entries.Manufacturer,
 		v.labels.Model, v.entries.Model,
 		v.labels.ModelURL, v.entries.ModelURL,
-		// v.labels.longdesc, v.entries.longdesc,
 		v.labels.Dimensions, spacebox,
 		layout.NewSpacer(), massbox,
 		v.labels.Price, container.NewBorder(nil, nil, nil, v.labels.Currency, v.entries.Price),
-		// v.labels.adddesc, v.entries.adddesc,
 		v.labels.ImgURL1, v.entries.ImgURL1,
 		v.labels.Notes, v.entries.Notes,
 		layout.NewSpacer(), widget.NewLabel(" "),
@@ -514,12 +535,18 @@ func (v formView) Bind(b *backend.Backend, id backend.ItemID) {
 	cat, _ := id.Item().Category.Get()
 	v.selects.Category.SetSelectedIndex(b.Metadata.GetListItemIDFor(cat))
 
-	// TODO dynamically show/hide more fields depending on category configuration
-	if id.Item().CatID.ShowPrice() {
-		v.showPrice()
-	} else {
-		v.hidePrice()
-	}
+	id.Item().CatID.Category().Config["ShowPrice"].AddListener(binding.NewDataListener(func() {
+		p, _ := id.Item().CatID.Category().Config["ShowPrice"].Get()
+		if p {
+			v.showPrice()
+		} else {
+			v.hidePrice()
+		}
+	}))
+
+	id.Item().CatID.Category().Config["ShowLength"].AddListener(binding.NewDataListener(func() {}))
+	id.Item().CatID.Category().Config["ShowVolume"].AddListener(binding.NewDataListener(func() {}))
+	id.Item().CatID.Category().Config["ShowWeight"].AddListener(binding.NewDataListener(func() {}))
 }
 func (v formView) Clear() {
 	v.entries.Name.Unbind()

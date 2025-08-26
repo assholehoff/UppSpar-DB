@@ -227,6 +227,7 @@ FOREIGN KEY(ItemID) REFERENCES Item(ItemID) ON DELETE CASCADE)`)
 		log.Printf("!slices.Contains(tables \"Item_Group\")")
 		b.db.Exec(`CREATE TABLE Item_Group(
 GroupID INTEGER PRIMARY KEY AUTOINCREMENT,
+ParentID INT DEFAULT 0,
 Name TEXT DEFAULT '',
 Deleted BOOL DEFAULT false)`)
 		touched = true
@@ -310,8 +311,8 @@ FOREIGN KEY(CatID) REFERENCES Category(CatID))`)
 		log.Printf("!slices.Contains(tables \"Category_Config\")")
 		b.db.Exec(`CREATE TABLE Category_Config(
 CatID INT, 
-ConfigKey TEXT DEFAULT '', 
-ConfigVal BOOL DEFAULT false, 
+ConfigKey TEXT, 
+ConfigVal BOOL, 
 FOREIGN KEY(CatID) REFERENCES Category(CatID) ON DELETE CASCADE)`)
 		touched = true
 	}

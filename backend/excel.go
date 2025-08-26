@@ -1,7 +1,6 @@
 package backend
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/xuri/excelize/v2"
@@ -16,8 +15,7 @@ func (m *Items) ExportExcel(p string) {
 	f.SetSheetName("Sheet1", "Data")
 	sw, err := f.NewStreamWriter("Data")
 	if err != nil {
-		msg := fmt.Sprintf("excelize.File.NewStreamWriter() error: %s", err)
-		log.Println(msg)
+		log.Printf("Items.ExportExcel(%s) query error: %s", p, err)
 	}
 
 	/* Write R1 headers */
@@ -72,7 +70,7 @@ func (m *Items) ExportExcel(p string) {
 			excelize.Cell{Value: "Bifoga filer"},                   // Attachments
 			excelize.Cell{Value: "Produktgrupp"},                   // ItemGroup
 		}); err != nil {
-		log.Printf("StreamWriter.SetRow(): %v", err)
+		log.Printf("Items.ExportExcel(%s) error: %s", p, err)
 		return
 	}
 
@@ -81,7 +79,7 @@ func (m *Items) ExportExcel(p string) {
 	query := `SELECT ItemID FROM Item WHERE ItemStatusID = 1`
 	rows, err := m.db.Query(query)
 	if err != nil {
-		log.Printf("query error: %s", err.Error())
+		log.Printf("Items.ExportExcel(%s) error: %s", p, err)
 	}
 
 	for rows.Next() {
@@ -146,20 +144,20 @@ func (m *Items) ExportExcel(p string) {
 
 		cell, err := excelize.CoordinatesToCellName(1, i+2)
 		if err != nil {
-			log.Println(err)
+			log.Printf("Items.ExportExcel(%s) error: %s", p, err)
 		}
 		if err := sw.SetRow(cell, row); err != nil {
-			log.Println(err)
+			log.Printf("Items.ExportExcel(%s) error: %s", p, err)
 		}
 	}
 
 	/* Flush stream */
 	if err := sw.Flush(); err != nil {
-		log.Println(err)
+		log.Printf("Items.ExportExcel(%s) error: %s", p, err)
 	}
 	/* Save file */
 	if err := f.SaveAs(f.Path); err != nil {
-		log.Println(err)
+		log.Printf("Items.ExportExcel(%s) error: %s", p, err)
 	}
 }
 

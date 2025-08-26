@@ -85,8 +85,8 @@ var (
 type ItemStatusID int
 
 /* Returns a localized string */
-func (is ItemStatusID) LString() string {
-	switch is {
+func (id ItemStatusID) LString() string {
+	switch id {
 	case ItemStatusAvailable:
 		return lang.X("itemstatus.available", "itemstatus.available")
 	case ItemStatusSold:
@@ -103,60 +103,60 @@ func (is ItemStatusID) LString() string {
 }
 
 /* String implements fmt.Stringer. */
-func (is ItemStatusID) String() string {
-	return fmt.Sprintf("%d", is)
+func (id ItemStatusID) String() string {
+	return fmt.Sprintf("%d", id)
 }
 
 /* Value implements driver.Valuer. */
-func (is ItemStatusID) Value() (driver.Value, error) {
-	return int64(is), nil
+func (id ItemStatusID) Value() (driver.Value, error) {
+	return int64(id), nil
 }
 
 /* Scan implements sql.Scanner. */
-func (is *ItemStatusID) Scan(src any) error {
+func (id *ItemStatusID) Scan(src any) error {
 	if !reflect.ValueOf(src).IsValid() {
-		*is = 0
+		*id = 0
 		return nil
 	}
 	switch reflect.TypeOf(src).Name() {
 	case "int":
-		*is = ItemStatusID(src.(int))
+		*id = ItemStatusID(src.(int))
 	case "int8":
-		*is = ItemStatusID(src.(int8))
+		*id = ItemStatusID(src.(int8))
 	case "int16":
-		*is = ItemStatusID(src.(int16))
+		*id = ItemStatusID(src.(int16))
 	case "int32":
-		*is = ItemStatusID(src.(int32))
+		*id = ItemStatusID(src.(int32))
 	case "int64":
-		*is = ItemStatusID(src.(int64))
+		*id = ItemStatusID(src.(int64))
 		if runtime.GOARCH == "386" || runtime.GOARCH == "arm" {
 			if src.(int64) > math.MaxInt32 {
-				*is = ItemStatusID(math.MaxInt32)
+				*id = ItemStatusID(math.MaxInt32)
 				return ErrLossyConversion
 			}
 		}
 	case "uint":
-		*is = ItemStatusID(src.(uint))
+		*id = ItemStatusID(src.(uint))
 	case "uint8":
-		*is = ItemStatusID(src.(uint8))
+		*id = ItemStatusID(src.(uint8))
 	case "uint16":
-		*is = ItemStatusID(src.(uint16))
+		*id = ItemStatusID(src.(uint16))
 	case "uint32":
-		*is = ItemStatusID(src.(uint32))
+		*id = ItemStatusID(src.(uint32))
 	case "uint64":
-		*is = ItemStatusID(src.(uint64))
+		*id = ItemStatusID(src.(uint64))
 		if runtime.GOARCH == "386" || runtime.GOARCH == "arm" {
 			if src.(uint64) > math.MaxUint32 {
-				*is = ItemStatusID(math.MaxUint32)
+				*id = ItemStatusID(math.MaxUint32)
 				return ErrLossyConversion
 			}
 		}
 		if src.(uint64) > math.MaxInt64 {
-			*is = ItemStatusID(math.MaxInt64)
+			*id = ItemStatusID(math.MaxInt64)
 			return ErrLossyConversion
 		}
 	default:
-		log.Printf("ItemStatus.Scan(%v) error: unknown type %s", src, reflect.TypeOf(src).Name())
+		log.Printf("ItemStatusID(%d).Scan(%v) type error: %s", id, src, reflect.TypeOf(src).Name())
 		return ErrInvalidType
 	}
 	return nil
@@ -224,7 +224,7 @@ func (id *ItemID) Scan(src any) error {
 			return ErrLossyConversion
 		}
 	default:
-		log.Printf("ItemID.Scan(%v) error: unknown type %s", src, reflect.TypeOf(src).Name())
+		log.Printf("ItemID(%d).Scan(%v) type error: %s", id, src, reflect.TypeOf(src).Name())
 		return ErrInvalidType
 	}
 	return nil
@@ -248,17 +248,6 @@ func (id ItemID) TypeName() string {
 }
 func (id ItemID) Item() *Item {
 	return getItem(be, id)
-}
-
-/* For the Journal */
-func (id ItemID) Touch() {
-	id.Item().touched = true
-}
-func (id ItemID) Touched() bool {
-	return id.Item().touched
-}
-func (id ItemID) Untouch() {
-	id.Item().touched = false
 }
 
 /* Returning data */
@@ -375,12 +364,12 @@ func (id ItemID) WeightUnitID() (UnitID, error) {
 	return UnitID(uid), err
 }
 func (id ItemID) ItemStatus() string {
-	is, err := id.getInt("ItemStatusID")
+	stat, err := id.getInt("ItemStatusID")
 	if err != nil {
-		log.Println(err)
+		log.Printf("ItemID(%d).ItemStatus() error: %s", id, err)
 		return ""
 	}
-	return ItemStatusID(is).LString()
+	return ItemStatusID(stat).LString()
 }
 func (id ItemID) ItemStatusID() (ItemStatusID, error) {
 	is, err := id.getInt("ItemStatusID")
@@ -957,26 +946,34 @@ func (m *Items) CreateNewItem() (ItemID, error) {
 	}
 	log.Printf("Items.CreateNewItem() result.LastInsertId() = %d", id)
 	i = ItemID(id)
-	// TODO this should not just append, but put in the correct position according to current config
 	m.Search()
 	return i, err
 }
 func (m *Items) CopyItem(id ItemID) (ItemID, error) {
-	// TODO this needs to be looked over as some columns are renamed and added ! !
-	query := `INSERT INTO Item (Name, Price, Currency, QuantityInPrice, Unit, OrderMultiple, MinOrder, Vat, Eta, EtaText, 
-Priority, Stock, ImgURL1, ImgURL2, ImgURL3, ImgURL4, ImgURL5, SpecsURL, UNSPSC, LongDesc, Manufacturer, 
-MfrItemId, GlobId, GlobIdType, ReplacesItem, Questions, PackagingCode, PresentationCode, 
-DeliveryAutoSign, DeliveryOption, ComparePrice, CompareUnit, CompareQuantityInPrice, PriceInfo, 
-AddDesc, ProcFlow, InnerUnit, QuantityInUnit, RiskClassification, Comment, EnvClassification, 
-FormId, Article, Attachments, ItemGroup, Width, Height, Depth, Weight, 
-LengthUnitID, WeightUnitID, CatID, StorageId, ItemStatusID)
-SELECT Name, Price, Currency, QuantityInPrice, Unit, OrderMultiple, MinOrder, Vat, Eta, EtaText, 
-Priority, Stock, ImgURL1, ImgURL2, ImgURL3, ImgURL4, ImgURL5, SpecsURL, UNSPSC, LongDesc, Manufacturer, 
-MfrItemId, GlobId, GlobIdType, ReplacesItem, Questions, PackagingCode, PresentationCode, 
-DeliveryAutoSign, DeliveryOption, ComparePrice, CompareUnit, CompareQuantityInPrice, PriceInfo, 
-AddDesc, ProcFlow, InnerUnit, QuantityInUnit, RiskClassification, Comment, EnvClassification, 
-FormId, Article, Attachments, ItemGroup, Width, Height, Depth, Weight, 
-LengthUnitID, WeightUnitID, CatID, StorageId, ItemStatusID
+	query := `INSERT INTO Item (ItemID, Name, Price, Currency, QuantityInPrice, Unit, 
+OrderMultiple, MinOrder, Vat, Eta, EtaText, Priority, Stock, 
+ImgURL1, ImgURL2, ImgURL3, ImgURL4, ImgURL5, SpecsURL, 
+UNSPSC, LongDesc, Manufacturer, MfrItemId, GlobId, GlobIdType, 
+ReplacesItem, Questions, PackagingCode, PresentationCode, 
+DeliveryAutoSign, DeliveryOption, ComparePrice, CompareUnit, 
+CompareQuantityInPrice, PriceInfo, AddDesc, ProcFlow, InnerUnit, 
+QuantityInUnit, RiskClassification, Comment, EnvClassification, 
+FormId, Article, Attachments, ItemGroup, 
+MfrID, ModelID, Notes, Width, Height, Depth, Volume, Weight, 
+LengthUnitID, VolumeUnitID, WeightUnitID, CatID, GroupID, 
+StorageID, ItemStatusID, ItemConditionID)
+SELECT ItemID, Name, Price, Currency, QuantityInPrice, Unit, 
+OrderMultiple, MinOrder, Vat, Eta, EtaText, Priority, Stock, 
+ImgURL1, ImgURL2, ImgURL3, ImgURL4, ImgURL5, SpecsURL, 
+UNSPSC, LongDesc, Manufacturer, MfrItemId, GlobId, GlobIdType, 
+ReplacesItem, Questions, PackagingCode, PresentationCode, 
+DeliveryAutoSign, DeliveryOption, ComparePrice, CompareUnit, 
+CompareQuantityInPrice, PriceInfo, AddDesc, ProcFlow, InnerUnit, 
+QuantityInUnit, RiskClassification, Comment, EnvClassification, 
+FormId, Article, Attachments, ItemGroup, 
+MfrID, ModelID, Notes, Width, Height, Depth, Volume, Weight, 
+LengthUnitID, VolumeUnitID, WeightUnitID, CatID, GroupID, 
+StorageID, ItemStatusID, ItemConditionID
 FROM Item WHERE ItemID = @0`
 	stmt, err := m.db.Prepare(query)
 	if err != nil {
@@ -1032,7 +1029,7 @@ func (m *Items) Search() {
 	case Contains:
 		searchString = fmt.Sprintf("%%%s%%", searchString)
 		query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` LIKE @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
-	// TODO (maybe) fix RegEx
+	// TODO (maybe... probably not) fix RegEx
 	// case RegExp:
 	// 	query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` REGEXP @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
 	default:
@@ -1150,11 +1147,6 @@ type Item struct {
 	ItemStatus   binding.String
 	DateCreated  binding.String
 	DateModified binding.String
-	Condition    map[string]any // TODO implement this
-	Properties   map[string]any // TODO implement this
-	branch       bool
-	priced       bool
-	touched      bool
 }
 
 func newItem(b *Backend, id ItemID) *Item {

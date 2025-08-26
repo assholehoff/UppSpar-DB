@@ -42,6 +42,7 @@ func NewJournalEntry(e *journal.Entry) *JournalEntry {
 }
 
 func (j *JournalEntry) Format(n int) {
+	// TODO add markdown and convert to rich text
 	itemIdRegex := regexp.MustCompile(`<ItemId>(\d+(\.\d+)?)<\/ItemId>`)
 	formatNumber := func(match string) string {
 		subMatch := itemIdRegex.FindStringSubmatch(match)
@@ -58,6 +59,9 @@ func (j *JournalEntry) Format(n int) {
 	result := itemIdRegex.ReplaceAllStringFunc(j.entry.Message, formatNumber)
 	j.message.Text = regexp.MustCompile(`<ItemId>|<\/ItemId>`).ReplaceAllString(result, "")
 	j.message.Text = regexp.MustCompile(`<CatId>|<\/CatId>`).ReplaceAllString(result, "")
+	// TODO <MfrID></MfrID>
+	// TODO <ModelID></ModelID>
+	// TODO <UnitID></UnitID>
 	j.message.Refresh()
 }
 

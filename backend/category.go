@@ -9,71 +9,55 @@ import (
 
 type Category struct {
 	binding.DataItem
-	db      *sql.DB
-	CatID   CatID
-	Name    binding.String
-	Parent  binding.String
-	Config  map[string]bool   // which fields to display in form
-	Data    map[string]string // what text to put in spreadsheet
-	branch  bool
-	priced  bool
-	touched bool
+	db     *sql.DB
+	CatID  CatID
+	Name   binding.String
+	Parent binding.String
+	Config map[string]binding.Bool
 }
 
 func newCategory(b *Backend, id CatID) *Category {
 	c := &Category{
 		db:     b.db,
 		CatID:  id,
-		Config: make(map[string]bool),
-		Data:   make(map[string]string),
+		Name:   binding.NewString(),
+		Parent: binding.NewString(),
+		Config: make(map[string]binding.Bool),
 	}
 
-	c.getAllFields()
+	c.getNameStrings()
+	c.makeConfigMap()
 	c.Name.AddListener(binding.NewDataListener(func() { c.CatID.SetName() }))
 	return c
 }
-
-func (c *Category) getAllFields() {
+func (c *Category) makeConfigMap() {
+	addConfig := func(key string) {
+		c.Config[key] = binding.NewBool()
+		b, err := c.CatID.getConfig(key)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			panic(err)
+		}
+		c.Config[key].Set(b)
+		c.Config[key].AddListener(binding.NewDataListener(func() {
+			ba, _ := c.Config[key].Get()
+			if bb, _ := c.CatID.getConfig(key); ba != bb {
+				c.CatID.setConfig(key, ba)
+			}
+		}))
+	}
+	addConfig("ShowPrice")
+	addConfig("ShowLength")
+	addConfig("ShowVolume")
+	addConfig("ShowWeight")
+}
+func (c *Category) getNameStrings() {
 	var Name sql.NullString
 	var ParentID CatID
 	query := `SELECT Name, ParentID FROM Category WHERE CatID = @0`
 	c.db.QueryRow(query, c.CatID).Scan(&Name, &ParentID)
 
-	c.Name = binding.NewString()
 	c.Name.Set(Name.String)
 
 	n, _ := ParentID.Name()
-	c.Parent = binding.NewString()
 	c.Parent.Set(n)
-
-	if c.CatID.Branch() {
-		c.branch = true
-	}
-
-	if c.CatID == CatID(0) {
-		c.priced = true
-	}
-
-	query = `SELECT ConfigKey, ConfigVal FROM Category_Config WHERE CatID = @0`
-	rows, err := c.db.Query(query, c.CatID)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		panic(err)
-	}
-	for rows.Next() {
-		var key sql.NullString
-		var val sql.NullBool
-		rows.Scan(&key, &val)
-		c.Config[key.String] = val.Bool
-	}
-
-	query = `SELECT DataKey, DataVal FROM Category_Data WHERE CatID = @0`
-	rows, err = c.db.Query(query, c.CatID)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		panic(err)
-	}
-	for rows.Next() {
-		var key, val sql.NullString
-		rows.Scan(&key, &val)
-		c.Data[key.String] = val.String
-	}
 }
