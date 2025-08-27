@@ -309,14 +309,22 @@ func (id ItemID) MfrID() (MfrID, error) {
 	return MfrID(mid), err
 }
 func (id ItemID) Manufacturer() (string, error) {
-	return id.getString("Manufacturer")
+	mid, err := id.MfrID()
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		panic(err)
+	}
+	return mid.Name()
 }
 func (id ItemID) ModelID() (ModelID, error) {
 	mid, err := id.getInt("ModelID")
 	return ModelID(mid), err
 }
 func (id ItemID) Model() (string, error) {
-	return id.getString("Model")
+	mid, err := id.ModelID()
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		panic(err)
+	}
+	return mid.Name()
 }
 func (id ItemID) ModelURL() (string, error) {
 	return id.getString("ModelURL")
@@ -950,7 +958,7 @@ func (m *Items) CreateNewItem() (ItemID, error) {
 	return i, err
 }
 func (m *Items) CopyItem(id ItemID) (ItemID, error) {
-	query := `INSERT INTO Item (ItemID, Name, Price, Currency, QuantityInPrice, Unit, 
+	query := `INSERT INTO Item (Name, Price, Currency, QuantityInPrice, Unit, 
 OrderMultiple, MinOrder, Vat, Eta, EtaText, Priority, Stock, 
 ImgURL1, ImgURL2, ImgURL3, ImgURL4, ImgURL5, SpecsURL, 
 UNSPSC, LongDesc, Manufacturer, MfrItemId, GlobId, GlobIdType, 
@@ -962,7 +970,7 @@ FormId, Article, Attachments, ItemGroup,
 MfrID, ModelID, Notes, Width, Height, Depth, Volume, Weight, 
 LengthUnitID, VolumeUnitID, WeightUnitID, CatID, GroupID, 
 StorageID, ItemStatusID, ItemConditionID)
-SELECT ItemID, Name, Price, Currency, QuantityInPrice, Unit, 
+SELECT Name, Price, Currency, QuantityInPrice, Unit, 
 OrderMultiple, MinOrder, Vat, Eta, EtaText, Priority, Stock, 
 ImgURL1, ImgURL2, ImgURL3, ImgURL4, ImgURL5, SpecsURL, 
 UNSPSC, LongDesc, Manufacturer, MfrItemId, GlobId, GlobIdType, 

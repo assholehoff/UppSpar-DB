@@ -106,20 +106,20 @@ func newItemView(a *App) *itemView {
 					log.Println(err)
 					return
 				}
-				iv.list.UnselectAll()
-				log.Println(b.Items.ItemIDSelection)
-				var id backend.ItemID
-				for _, item := range items {
-					id, err = b.Items.CopyItem(item.(backend.ItemID))
+				fyne.Do(func() {
+					iv.list.UnselectAll()
+					log.Println(b.Items.ItemIDSelection)
+					var id backend.ItemID
+					for _, item := range items {
+						id, err = b.Items.CopyItem(item.(backend.ItemID))
+						if err != nil {
+							log.Println(err)
+						}
+					}
+					index, err := b.Items.GetListItemIDFor(id)
 					if err != nil {
 						log.Println(err)
 					}
-				}
-				index, err := b.Items.GetListItemIDFor(id)
-				if err != nil {
-					log.Println(err)
-				}
-				fyne.Do(func() {
 					iv.list.Select(index)
 					time.Sleep(100 * time.Millisecond)
 					iv.listTools.Items[2].(*widget.ToolbarAction).Enable()
@@ -536,17 +536,63 @@ func (v formView) Bind(b *backend.Backend, id backend.ItemID) {
 	v.selects.Category.SetSelectedIndex(b.Metadata.GetListItemIDFor(cat))
 
 	id.Item().CatID.Category().Config["ShowPrice"].AddListener(binding.NewDataListener(func() {
+		log.Printf("ShowPrice listener fired for ItemID(%d) !", id)
+		log.Printf("ItemID(%d).Item().CatID(%d) == backend.CatID(1) returned %t", id, id.Item().CatID, id.Item().CatID == backend.CatID(1))
+		if cid, _ := id.CatID(); cid == backend.CatID(1) {
+			v.hideStatus()
+			v.hideCategory()
+			v.hideImgURL()
+			v.hideSpecsURL()
+			v.hideMfrModel()
+			v.hideLength()
+			v.hideVolume()
+			v.hideWeight()
+			v.showPrice()
+			v.hidePreviewAddDesc()
+			return
+		} else {
+			v.showStatus()
+			v.showCategory()
+			v.showImgURL()
+			v.showSpecsURL()
+			v.showMfrModel()
+			v.showLength()
+			v.showWeight()
+			v.showVolume()
+			v.showPreviewAddDesc()
+		}
 		p, _ := id.Item().CatID.Category().Config["ShowPrice"].Get()
+		log.Printf("ItemID(%d).Item().CatID(%d).Category() ShowPrice returned %t", id, id.Item().CatID, p)
 		if p {
 			v.showPrice()
 		} else {
 			v.hidePrice()
 		}
 	}))
-
-	id.Item().CatID.Category().Config["ShowLength"].AddListener(binding.NewDataListener(func() {}))
-	id.Item().CatID.Category().Config["ShowVolume"].AddListener(binding.NewDataListener(func() {}))
-	id.Item().CatID.Category().Config["ShowWeight"].AddListener(binding.NewDataListener(func() {}))
+	id.Item().CatID.Category().Config["ShowLength"].AddListener(binding.NewDataListener(func() {
+		p, _ := id.Item().CatID.Category().Config["ShowLength"].Get()
+		if p {
+			v.showLength()
+		} else {
+			v.hideLength()
+		}
+	}))
+	id.Item().CatID.Category().Config["ShowVolume"].AddListener(binding.NewDataListener(func() {
+		p, _ := id.Item().CatID.Category().Config["ShowVolume"].Get()
+		if p {
+			v.showVolume()
+		} else {
+			v.hideVolume()
+		}
+	}))
+	id.Item().CatID.Category().Config["ShowWeight"].AddListener(binding.NewDataListener(func() {
+		p, _ := id.Item().CatID.Category().Config["ShowWeight"].Get()
+		if p {
+			v.showWeight()
+		} else {
+			v.hideWeight()
+		}
+	}))
 }
 func (v formView) Clear() {
 	v.entries.Name.Unbind()
@@ -654,13 +700,175 @@ func (v formView) Enable() {
 	v.selects.Status.Enable()
 }
 
+func (v *formView) showPreviewAddDesc() {
+	v.labels.AddDesc.Show()
+	v.values.AddDesc.Show()
+}
+func (v *formView) hidePreviewAddDesc() {
+	v.labels.AddDesc.Hide()
+	v.values.AddDesc.Hide()
+}
+func (v *formView) showStatus() {
+	v.labels.Status.Show()
+	v.selects.Status.Enable()
+	v.selects.Status.Show()
+}
+func (v *formView) hideStatus() {
+	v.labels.Status.Hide()
+	v.selects.Status.Disable()
+	v.selects.Status.Hide()
+}
+func (v *formView) showCategory() {
+	v.labels.Category.Show()
+	v.selects.Category.Enable()
+	v.selects.Category.Show()
+}
+func (v *formView) hideCategory() {
+	v.labels.Category.Hide()
+	v.selects.Category.Disable()
+	v.selects.Category.Hide()
+}
+func (v *formView) showImgURL() {
+	v.entries.ImgURL1.Enable()
+	v.entries.ImgURL2.Enable()
+	v.entries.ImgURL3.Enable()
+	v.entries.ImgURL4.Enable()
+	v.entries.ImgURL5.Enable()
+
+	v.labels.ImgURL1.Show()
+	v.labels.ImgURL2.Show()
+	v.labels.ImgURL3.Show()
+	v.labels.ImgURL4.Show()
+	v.labels.ImgURL5.Show()
+
+	v.entries.ImgURL1.Show()
+	v.entries.ImgURL2.Show()
+	v.entries.ImgURL3.Show()
+	v.entries.ImgURL4.Show()
+	v.entries.ImgURL5.Show()
+}
+func (v *formView) hideImgURL() {
+	v.entries.ImgURL1.Disable()
+	v.entries.ImgURL2.Disable()
+	v.entries.ImgURL3.Disable()
+	v.entries.ImgURL4.Disable()
+	v.entries.ImgURL5.Disable()
+
+	v.labels.ImgURL1.Hide()
+	v.labels.ImgURL2.Hide()
+	v.labels.ImgURL3.Hide()
+	v.labels.ImgURL4.Hide()
+	v.labels.ImgURL5.Hide()
+
+	v.entries.ImgURL1.Hide()
+	v.entries.ImgURL2.Hide()
+	v.entries.ImgURL3.Hide()
+	v.entries.ImgURL4.Hide()
+	v.entries.ImgURL5.Hide()
+}
+func (v *formView) showSpecsURL() {
+	v.entries.SpecsURL.Enable()
+	v.entries.SpecsURL.Show()
+
+	v.labels.SpecsURL.Show()
+}
+func (v *formView) hideSpecsURL() {
+	v.entries.SpecsURL.Disable()
+	v.entries.SpecsURL.Hide()
+
+	v.labels.SpecsURL.Hide()
+}
+func (v *formView) showMfrModel() {
+	v.entries.Manufacturer.Enable()
+	v.entries.Model.Enable()
+	v.entries.ModelURL.Enable()
+
+	v.entries.Manufacturer.Show()
+	v.entries.Model.Show()
+	v.entries.ModelURL.Show()
+
+	v.labels.Manufacturer.Show()
+	v.labels.Model.Show()
+	v.labels.ModelURL.Show()
+}
+func (v *formView) hideMfrModel() {
+	v.entries.Manufacturer.Disable()
+	v.entries.Model.Disable()
+	v.entries.ModelURL.Disable()
+
+	v.entries.Manufacturer.Hide()
+	v.entries.Model.Hide()
+	v.entries.ModelURL.Hide()
+
+	v.labels.Manufacturer.Hide()
+	v.labels.Model.Hide()
+	v.labels.ModelURL.Hide()
+}
 func (v *formView) showPrice() {
+	v.entries.Price.Enable()
 	v.entries.Price.Show()
 	v.labels.Currency.Show()
 	v.labels.Price.Show()
 }
 func (v *formView) hidePrice() {
+	v.entries.Price.Disable()
 	v.entries.Price.Hide()
 	v.labels.Currency.Hide()
 	v.labels.Price.Hide()
+}
+func (v *formView) showLength() {
+	v.entries.Width.Enable()
+	v.entries.Height.Enable()
+	v.entries.Depth.Enable()
+	v.entries.Width.Show()
+	v.entries.Height.Show()
+	v.entries.Depth.Show()
+	v.labels.Width.Show()
+	v.labels.Height.Show()
+	v.labels.Depth.Show()
+	v.labels.Dimensions.Show()
+	v.selects.LengthUnit.Enable()
+	v.selects.LengthUnit.Show()
+}
+func (v *formView) hideLength() {
+	v.entries.Width.Disable()
+	v.entries.Height.Disable()
+	v.entries.Depth.Disable()
+	v.entries.Width.Hide()
+	v.entries.Height.Hide()
+	v.entries.Depth.Hide()
+	v.labels.Width.Hide()
+	v.labels.Height.Hide()
+	v.labels.Depth.Hide()
+	v.labels.Dimensions.Hide()
+	v.selects.LengthUnit.Disable()
+	v.selects.LengthUnit.Hide()
+}
+func (v *formView) showVolume() {
+	v.entries.Volume.Enable()
+	v.entries.Volume.Show()
+	v.labels.Volume.Show()
+	v.selects.VolumeUnit.Enable()
+	v.selects.VolumeUnit.Show()
+}
+func (v *formView) hideVolume() {
+	v.entries.Volume.Disable()
+	v.entries.Volume.Hide()
+	v.labels.Volume.Hide()
+	v.selects.VolumeUnit.Disable()
+	v.selects.VolumeUnit.Hide()
+}
+func (v *formView) showWeight() {
+	v.entries.Weight.Enable()
+	v.entries.Weight.Show()
+	v.labels.Weight.Show()
+	v.selects.WeightUnit.Enable()
+	v.selects.WeightUnit.Show()
+}
+func (v *formView) hideWeight() {
+	v.entries.Weight.Disable()
+	v.entries.Weight.Hide()
+	v.labels.Weight.Hide()
+	v.selects.WeightUnit.Disable()
+	v.selects.WeightUnit.Hide()
 }

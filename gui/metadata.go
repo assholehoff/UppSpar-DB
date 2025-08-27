@@ -180,9 +180,11 @@ func newCategoryView(b *backend.Backend) *categoryView {
 		m.form.labels.parent, m.form.selects.parent,
 		m.form.labels.name, m.form.entries.name,
 		layout.NewSpacer(), m.form.checks.price,
-		layout.NewSpacer(), m.form.checks.length,
-		layout.NewSpacer(), m.form.checks.volume,
-		layout.NewSpacer(), m.form.checks.weight,
+		layout.NewSpacer(), container.NewHBox(
+			m.form.checks.length,
+			m.form.checks.volume,
+			m.form.checks.weight,
+		),
 	)
 	m.tree.OnSelected = func(uid widget.TreeNodeID) {
 		b.Metadata.SelectCategory(b.Metadata.GetCatIDForTreeItem(uid))
@@ -236,5 +238,9 @@ func (m *categoryFormView) Bind(b *backend.Backend, id backend.CatID) {
 	m.checks.length.Bind(id.Category().Config["ShowLength"])
 	m.checks.volume.Bind(id.Category().Config["ShowVolume"])
 	m.checks.weight.Bind(id.Category().Config["ShowWeight"])
+	p, _ := id.ParentID()
+	if p == 0 {
+		m.selects.parent.SetSelected(lang.L("None"))
+	}
 	id.Category().Name.AddListener(binding.NewDataListener(func() { b.Metadata.UpdateCatList() }))
 }
