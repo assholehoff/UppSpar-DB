@@ -19,18 +19,6 @@ import (
 	midget "github.com/assholehoff/fyne-midget"
 )
 
-var _ fyne.Focusable = (*Entry)(nil)
-
-type Entry struct {
-	xwidget.CompletionEntry
-}
-
-func (e *Entry) FocusGained() {
-	// e.Entry.FocusGained()
-	e.CompletionEntry.FocusGained()
-	e.TypedShortcut(&fyne.ShortcutSelectAll{})
-}
-
 type itemView struct {
 	bound     backend.ItemID
 	container *fyne.Container
@@ -301,25 +289,25 @@ func newItemView(a *App) *itemView {
 }
 
 type formEntries struct {
-	Name         *widget.Entry
-	Price        *widget.Entry
-	Vat          *widget.Entry
-	ImgURL1      *widget.Entry
-	ImgURL2      *widget.Entry
-	ImgURL3      *widget.Entry
-	ImgURL4      *widget.Entry
-	ImgURL5      *widget.Entry
-	SpecsURL     *widget.Entry
-	LongDesc     *widget.Entry
-	Manufacturer *Entry
-	Model        *Entry
-	ModelURL     *widget.Entry
-	Notes        *widget.Entry
-	Width        *widget.Entry
-	Height       *widget.Entry
-	Depth        *widget.Entry
-	Volume       *widget.Entry
-	Weight       *widget.Entry
+	Name         *midget.Entry
+	Price        *midget.Entry
+	Vat          *midget.Entry
+	ImgURL1      *midget.Entry
+	ImgURL2      *midget.Entry
+	ImgURL3      *midget.Entry
+	ImgURL4      *midget.Entry
+	ImgURL5      *midget.Entry
+	SpecsURL     *midget.Entry
+	LongDesc     *midget.Entry
+	Manufacturer *midget.Entry
+	Model        *midget.Entry
+	ModelURL     *midget.Entry
+	Notes        *midget.Entry
+	Width        *midget.Entry
+	Height       *midget.Entry
+	Depth        *midget.Entry
+	Volume       *midget.Entry
+	Weight       *midget.Entry
 }
 
 type formDataLabels struct {
@@ -403,25 +391,25 @@ func newFormView(b *backend.Backend) *formView {
 
 	v := &formView{
 		entries: &formEntries{
-			Name:         widget.NewEntry(),
-			Price:        widget.NewEntry(),
-			Vat:          widget.NewEntry(),
-			ImgURL1:      widget.NewEntry(),
-			ImgURL2:      widget.NewEntry(),
-			ImgURL3:      widget.NewEntry(),
-			ImgURL4:      widget.NewEntry(),
-			ImgURL5:      widget.NewEntry(),
-			SpecsURL:     widget.NewEntry(),
-			LongDesc:     widget.NewEntry(),
-			Manufacturer: &Entry{},
-			Model:        &Entry{},
-			ModelURL:     widget.NewEntry(),
-			Notes:        widget.NewEntry(),
-			Width:        widget.NewEntry(),
-			Height:       widget.NewEntry(),
-			Depth:        widget.NewEntry(),
-			Volume:       widget.NewEntry(),
-			Weight:       widget.NewEntry(),
+			Name:         midget.NewEntry(),
+			Price:        midget.NewEntry(),
+			Vat:          midget.NewEntry(),
+			ImgURL1:      midget.NewEntry(),
+			ImgURL2:      midget.NewEntry(),
+			ImgURL3:      midget.NewEntry(),
+			ImgURL4:      midget.NewEntry(),
+			ImgURL5:      midget.NewEntry(),
+			SpecsURL:     midget.NewEntry(),
+			LongDesc:     midget.NewEntry(),
+			Manufacturer: midget.NewEntry(),
+			Model:        midget.NewEntry(),
+			ModelURL:     midget.NewEntry(),
+			Notes:        midget.NewEntry(),
+			Width:        midget.NewEntry(),
+			Height:       midget.NewEntry(),
+			Depth:        midget.NewEntry(),
+			Volume:       midget.NewEntry(),
+			Weight:       midget.NewEntry(),
 		},
 		labels: &formLabels{
 			ItemID:       widget.NewLabel(lang.X("item.form.label.itemid", "item.form.label.itemid")),
@@ -549,8 +537,6 @@ func (v formView) Bind(b *backend.Backend, id backend.ItemID) {
 	v.selects.Category.SetSelectedIndex(b.Metadata.GetListItemIDFor(cat))
 
 	id.Item().CatID.Category().Config["ShowPrice"].AddListener(binding.NewDataListener(func() {
-		log.Printf("ShowPrice listener fired for ItemID(%d) !", id)
-		log.Printf("ItemID(%d).Item().CatID(%d) == backend.CatID(1) returned %t", id, id.Item().CatID, id.Item().CatID == backend.CatID(1))
 		if cid, _ := id.CatID(); cid == backend.CatID(1) {
 			v.hideStatus()
 			v.hideCategory()
@@ -575,7 +561,6 @@ func (v formView) Bind(b *backend.Backend, id backend.ItemID) {
 			v.showPreviewAddDesc()
 		}
 		p, _ := id.Item().CatID.Category().Config["ShowPrice"].Get()
-		log.Printf("ItemID(%d).Item().CatID(%d).Category() ShowPrice returned %t", id, id.Item().CatID, p)
 		if p {
 			v.showPrice()
 		} else {

@@ -2,7 +2,7 @@ package backend
 
 import (
 	"database/sql"
-	"log"
+	"errors"
 
 	"fyne.io/fyne/v2/data/binding"
 )
@@ -22,8 +22,8 @@ func newMfr(b *Backend, id MfrID) *Manufacturer {
 	}
 
 	name, err := mfr.MfrID.Name()
-	if err != nil {
-		log.Println(err)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		panic(err)
 	}
 	mfr.Name.Set(name)
 	mfr.Name.AddListener(binding.NewDataListener(func() { mfr.MfrID.SetName() }))

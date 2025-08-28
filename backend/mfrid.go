@@ -123,35 +123,36 @@ func getManufacturer(b *Backend, id MfrID) *Manufacturer {
 
 func (id MfrID) getBool(key string) (val bool, err error) {
 	b, err := getValue[sql.NullBool]("Manufacturer", id, key)
-	if b.Valid {
+	if b.Valid && err == nil {
 		val = b.Bool
-	} else {
+	} else if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.Printf("MfrID(%d).getBool(%s) error: %s", id, key, err)
 	}
 	return
 }
 func (id MfrID) getFloat(key string) (val float64, err error) {
 	f, err := getValue[sql.NullFloat64]("Manufacturer", id, key)
-	if f.Valid {
+	if f.Valid && err == nil {
 		val = f.Float64
-	} else {
+	} else if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.Printf("MfrID(%d).getFloat(%s) error: %s", id, key, err)
 	}
 	return
 }
 func (id MfrID) getInt(key string) (val int, err error) {
 	i, err := getValue[sql.NullInt64]("Manufacturer", id, key)
-	val = int(i.Int64)
-	if !i.Valid {
+	if i.Valid && err == nil {
+		val = int(i.Int64)
+	} else if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.Printf("MfrID(%d).getInt(%s) error: %s", id, key, err)
 	}
 	return
 }
 func (id MfrID) getString(key string) (val string, err error) {
 	s, err := getValue[sql.NullString]("Manufacturer", id, key)
-	if s.Valid {
+	if s.Valid && err == nil {
 		val = s.String
-	} else {
+	} else if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.Printf("MfrID(%d).getString(%s) error: %s", id, key, err)
 	}
 	return

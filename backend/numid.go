@@ -53,7 +53,7 @@ func getValue[T sql.NullBool | sql.NullFloat64 | NullInt | sql.NullInt64 | sql.N
 /* Set value for column 'key' for row 'id' in table 't' to 'val' */
 func setValue[T bool | float64 | int | string](t string, id NumID, key string, val T) (err error) {
 	query := `UPDATE ` + t + ` SET ` + key + ` = @1 WHERE ` + id.TypeName() + ` = @2 AND ` + key + ` <> @3`
-	log.Printf("UPDATE %s SET %s = %v WHERE %s = %d AND %s <> %v", t, key, val, id.TypeName(), id, key, val)
+	// log.Printf("UPDATE %s SET %s = %v WHERE %s = %d AND %s <> %v", t, key, val, id.TypeName(), id, key, val)
 	stmt, err := be.db.Prepare(query)
 	if err != nil {
 		log.Printf("setItemIDValue(%d, %s, %v) panic!", id, key, val)

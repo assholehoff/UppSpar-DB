@@ -404,7 +404,6 @@ func (id ItemID) getBool(key string) (val bool, err error) {
 		val = b.Bool
 	} else {
 		log.Printf("ItemID(%d).getBool(%s) error: %s", id, key, err)
-		err = ErrSQLNullValue
 	}
 	return
 }
@@ -414,7 +413,6 @@ func (id ItemID) getFloat(key string) (val float64, err error) {
 		val = f.Float64
 	} else {
 		log.Printf("ItemID(%d).getFloat(%s) error: %s", id, key, err)
-		err = ErrSQLNullValue
 	}
 	return
 }
@@ -423,7 +421,6 @@ func (id ItemID) getInt(key string) (val int, err error) {
 	val = int(i.Int64)
 	if !i.Valid {
 		log.Printf("ItemID(%d).getInt(%s) error: %s", id, key, err)
-		err = ErrSQLNullValue
 	}
 	return
 }
@@ -433,7 +430,6 @@ func (id ItemID) getString(key string) (val string, err error) {
 		val = s.String
 	} else {
 		log.Printf("ItemID(%d).getInt(%s) error: %s", id, key, err)
-		err = ErrSQLNullValue
 	}
 	return
 }
@@ -472,8 +468,8 @@ func (id ItemID) CompileLongDesc() error {
 	var longDesc string
 	n := false
 	addStringToLine := func(s string, e error) {
-		if e != nil {
-			log.Println(e)
+		if e != nil && !errors.Is(e, sql.ErrNoRows) {
+			log.Printf("ItemID(%d).CompileLongDesc().addStringToLine(%s) error: %s", id, s, e)
 		}
 		if s != "" {
 			longDesc += fmt.Sprintf("%s ", s)
@@ -519,9 +515,7 @@ func (id ItemID) SetCategory() error {
 	if err != nil {
 		return fmt.Errorf("ItemID.SetCategory() error: %w", err)
 	}
-	log.Printf("ItemID(%d).SetCategory(%s)", id, s)
 	s = strings.TrimSpace(s)
-	log.Printf("ItemID(%d).SetCategory(%s)", id, s)
 	n, err := CatIDFor(s)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("ItemID(%d).SetCategory(%s) error: %s", id, s, err)
@@ -649,12 +643,10 @@ func (id ItemID) SetMfrID(val MfrID) error {
 	return id.setInt(key, int(val))
 }
 func (id ItemID) SetManufacturer() error {
-	log.Printf("ItemID(%d).SetManufacturer()", id)
 	s, err := id.Item().Manufacturer.Get()
 	if err != nil {
 		return fmt.Errorf("ItemID.SetManufacturer() error: %w", err)
 	}
-	log.Printf("ItemID(%d).SetManufacturer(%s)", id, s)
 	if len(s) == 0 {
 		id.setString("Manufacturer", s)
 		return nil
@@ -675,16 +667,15 @@ func (id ItemID) SetModelID(val ModelID) error {
 	key := "ModelID"
 	return id.setInt(key, int(val))
 }
-func (id ItemID) SetModel() error {
-	key := "Model"
+func (id ItemID) SetModelName() error {
+	key := "ModelName"
 	s, err := id.Item().Model.Get()
 	if err != nil {
 		return fmt.Errorf("ItemID(%d).SetModel(%s) error: %s", id, s, err)
 	}
-	log.Printf("ItemID(%d).SetModel(%s)", id, s)
 	if len(s) == 0 {
-		log.Printf("setting Model to the empty string...")
 		id.setString(key, s)
+		id.SetModelID(0)
 		return nil
 	}
 	n, err := ModelIDFor(s)
@@ -692,8 +683,7 @@ func (id ItemID) SetModel() error {
 		return fmt.Errorf("ItemID(%d).SetModel(%s) error: %s", id, s, err)
 	}
 	if errors.Is(err, sql.ErrNoRows) {
-		// no such model exists, set the name field instead
-		log.Printf("setting Model to the string %s...", s)
+		// no such model exists, set the individual name field instead
 		id.setString(key, s)
 		return nil
 	}
@@ -1074,13 +1064,13 @@ func (m *Items) Search() {
 	}
 	defer stmt.Close()
 
-	clearQuery := strings.Replace(query, "@0", searchString, 1)
-	clearQuery = strings.Replace(clearQuery, "@1", fmt.Sprintf("%d", ItemStatusDeleted), 1)
-	log.Println(clearQuery)
+	// clearQuery := strings.Replace(query, "@0", searchString, 1)
+	// clearQuery = strings.Replace(clearQuery, "@1", fmt.Sprintf("%d", ItemStatusDeleted), 1)
+	// log.Println(clearQuery)
 
 	rows, err := stmt.Query(searchString, ItemStatusDeleted)
-	if err != nil {
-		log.Println(fmt.Errorf("search: statement query failed: %w", err))
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		log.Println(fmt.Errorf("Items.Search() error: %w", err))
 		return
 	}
 	m.ItemIDList.Set([]any{})
@@ -1215,7 +1205,7 @@ func newItem(b *Backend, id ItemID) *Item {
 	t.AddDesc.AddListener(binding.NewDataListener(func() { t.ItemID.SetAddDesc(); t.ItemID.CompileLongDesc() }))
 	t.LongDesc.AddListener(binding.NewDataListener(func() { t.ItemID.SetLongDesc(); t.ItemID.CompileLongDesc() }))
 	t.Manufacturer.AddListener(binding.NewDataListener(func() { t.ItemID.SetManufacturer(); t.ItemID.CompileLongDesc() }))
-	t.Model.AddListener(binding.NewDataListener(func() { t.ItemID.SetModel(); t.ItemID.CompileLongDesc() }))
+	t.Model.AddListener(binding.NewDataListener(func() { t.ItemID.SetModelName(); t.ItemID.CompileLongDesc() }))
 	t.ModelURL.AddListener(binding.NewDataListener(func() { t.ItemID.SetModelURL(); t.ItemID.CompileLongDesc() }))
 	t.Notes.AddListener(binding.NewDataListener(func() { t.ItemID.SetNotes(); t.ItemID.CompileLongDesc() }))
 	t.widthFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetWidth(); t.ItemID.CompileAddDesc(); t.ItemID.CompileLongDesc() }))
@@ -1233,7 +1223,7 @@ func newItem(b *Backend, id ItemID) *Item {
 	return t
 }
 
-func (t *Item) getAllFields() {
+func (t *Item) getAllFields() error {
 	t.ItemIDString = binding.NewString()
 	t.Name = binding.NewString()
 	t.Category = binding.NewString()
@@ -1270,7 +1260,7 @@ func (t *Item) getAllFields() {
 	t.DateModified = binding.NewString()
 
 	var Name, Currency, Unit, ImgURL1, ImgURL2, ImgURL3, ImgURL4, ImgURL5, SpecsURL sql.NullString
-	var AddDesc, LongDesc, Manufacturer, Model, ModelDesc, ModelURL, Notes, DateCreated, DateModified sql.NullString
+	var AddDesc, LongDesc, Manufacturer, ModelName, ModelDesc, ModelURL, Notes, DateCreated, DateModified sql.NullString
 	var Price, QuantityInPrice, Vat, Stock, Width, Height, Depth, Volume, Weight sql.NullFloat64
 	var Priority sql.NullBool
 	var CatID CatID
@@ -1282,38 +1272,37 @@ func (t *Item) getAllFields() {
 	query := `SELECT 
 Name, CatID, Price, Currency, QuantityInPrice, Unit, Vat, 
 Priority, Stock, ImgURL1, ImgURL2, ImgURL3, ImgURL4, ImgURL5, SpecsURL, 
-AddDesc, LongDesc, Manufacturer, MfrID, ModelID, Model, ModelDesc, ModelURL, Notes, 
+AddDesc, LongDesc, Manufacturer, MfrID, ModelID, ModelName, ModelDesc, ModelURL, Notes, 
 Width, Height, Depth, Volume, Weight, 
 LengthUnitID, VolumeUnitID, WeightUnitID, 
 ItemStatusID, DateCreated, DateModified 
 FROM Item WHERE ItemID = @0`
 	stmt, err := t.db.Prepare(query)
 	if err != nil {
-		log.Println(fmt.Errorf("getAllFields error: %w", err))
+		return fmt.Errorf("get all item fields error: %w", err)
 	}
 	defer stmt.Close()
 	err = stmt.QueryRow(t.ItemID).Scan(
 		&Name, &CatID, &Price, &Currency, &QuantityInPrice, &Unit, &Vat,
 		&Priority, &Stock, &ImgURL1, &ImgURL2, &ImgURL3, &ImgURL4, &ImgURL5, &SpecsURL,
-		&AddDesc, &LongDesc, &Manufacturer, &MfrID, &ModelID, &ModelDesc, &Model, &ModelURL, &Notes,
+		&AddDesc, &LongDesc, &Manufacturer, &MfrID, &ModelID, &ModelName, &ModelDesc, &ModelURL, &Notes,
 		&Width, &Height, &Depth, &Volume, &Weight,
 		&LengthUnitID, &VolumeUnitID, &WeightUnitID,
 		&ItemStatusID, &DateCreated, &DateModified,
 	)
 	if err != nil {
-		log.Println("Item.getAllFields() error!")
-		panic(err)
+		return fmt.Errorf("get all item fields error: %w", err)
 	}
 
 	var category, manufacturer, model, modelUrl, modelDesc string
 
 	category, err = CatID.Name()
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		panic(err)
+		return fmt.Errorf("get all item fields error: %w", err)
 	}
 
 	manufacturer = Manufacturer.String
-	model = Model.String
+	model = ModelName.String
 	modelUrl = ModelURL.String
 	modelDesc = ModelDesc.String
 
@@ -1325,19 +1314,19 @@ FROM Item WHERE ItemID = @0`
 
 	LengthUnitString, err := LengthUnitID.Name()
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		panic(err)
+		return fmt.Errorf("get all item fields error: %w", err)
 	}
 	VolumeUnitString, err := VolumeUnitID.Name()
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		panic(err)
+		return fmt.Errorf("get all item fields error: %w", err)
 	}
 	WeightUnitString, err := WeightUnitID.Name()
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		panic(err)
+		return fmt.Errorf("get all item fields error: %w", err)
 	}
 	ItemStatusString := ItemStatusID.LString()
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		panic(err)
+		return fmt.Errorf("get all item fields error: %w", err)
 	}
 
 	if MfrID != 0 {
@@ -1352,14 +1341,14 @@ FROM Item WHERE ItemID = @0`
 		}
 		modelCatID, err := ModelID.CatID()
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			panic(err)
+			return fmt.Errorf("get all item fields error: %w", err)
 		}
 		if modelCategory, _ := modelCatID.Name(); category == "" && modelCategory != category {
 			category = modelCategory
 		}
 		modelMfrID, err := ModelID.MfrID()
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			panic(err)
+			return fmt.Errorf("get all item fields error: %w", err)
 		}
 		if t.MfrID == 0 && modelMfrID != t.MfrID {
 			t.MfrID = modelMfrID
@@ -1443,7 +1432,6 @@ FROM Item WHERE ItemID = @0`
 		utc, err := time.Parse(subsec, DateCreated.String)
 		created = utc.In(stockholm)
 		if err != nil {
-			log.Println(fmt.Errorf("error parsing DateCreated: %w", err))
 			t.DateCreated.Set(fmt.Sprintf("error parsing DateCreated: %v", err))
 		} else {
 			t.DateCreated.Set(created.Format(time.DateTime))
@@ -1453,10 +1441,10 @@ FROM Item WHERE ItemID = @0`
 		utc, err := time.Parse(subsec, DateCreated.String)
 		modified = utc.In(stockholm)
 		if err != nil {
-			log.Println(fmt.Errorf("error parsing DateCreated: %w", err))
 			t.DateModified.Set(fmt.Sprintf("error parsing DateModified: %v", err))
 		} else {
 			t.DateModified.Set(modified.Format(time.DateTime))
 		}
 	}
+	return nil
 }

@@ -74,7 +74,6 @@ func (m *Metadata) CopyCategory() error {
 	if err != nil {
 		return fmt.Errorf("Metadata.CopyCategory() error: %w", err)
 	}
-	log.Printf("copying %d from selection slice", sid)
 	selectedCatID := sid.(CatID)
 	query := `INSERT INTO Category (PrentID, Name) SELECT ParentID, Name FROM Category WHERE CatID = @0`
 	stmt, err := m.b.db.Prepare(query)
@@ -103,20 +102,24 @@ func (m *Metadata) DeleteCategory() error {
 		return fmt.Errorf("Metadata.DeleteCategory() error: %w", err)
 	}
 	defer stmt.Close()
-	res, err := stmt.Exec(selectedCatID)
+	_, err = stmt.Exec(selectedCatID)
 	if err != nil {
 		return fmt.Errorf("Metadata.DeleteCategory() error: %w", err)
 	}
-	raf, _ := res.RowsAffected()
-	log.Printf("%d rows affected", raf)
-	m.UnselectCategory(selectedCatID)
-	m.CatIDList.Remove(selectedCatID)
+	err = m.UnselectCategory(selectedCatID)
+	if err != nil {
+		return fmt.Errorf("Metadata.DeleteCategory() error: %w", err)
+	}
+	err = m.CatIDList.Remove(selectedCatID)
+	if err != nil {
+		return fmt.Errorf("Metadata.DeleteCategory() error: %w", err)
+	}
 	return err
 }
 func (m *Metadata) GetCatIDForListItem(index widget.ListItemID) CatID {
 	id, err := m.CatIDList.GetValue(index)
 	if err != nil {
-		log.Println("Metadata.GetCatIDFor(index widget.ListItemID) panic!")
+		log.Printf("Metadata.GetCatIDFor(%d) error: %s", index, err)
 		panic(err)
 	}
 	return id.(CatID)
@@ -124,6 +127,7 @@ func (m *Metadata) GetCatIDForListItem(index widget.ListItemID) CatID {
 func (m *Metadata) GetListItemIDFor(s string) widget.ListItemID {
 	cats, err := m.Categories.Get()
 	if err != nil {
+		log.Printf("Metadata.GetListItemIDFor(%s) error: %s", s, err)
 		panic(err)
 	}
 	index := slices.IndexFunc(cats, func(n string) bool {
@@ -134,36 +138,33 @@ func (m *Metadata) GetListItemIDFor(s string) widget.ListItemID {
 func (m *Metadata) GetCatIDForTreeItem(index widget.TreeNodeID) CatID {
 	id, err := m.CatIDTree.GetValue(index)
 	if err != nil {
-		log.Println("Metadata.GetCatIDForTreeItem(index widget.TreeNodeID) panic!")
+		log.Printf("Metadata.GetCatIDForTreeItem(%d) error: %s", index, err)
 		panic(err)
 	}
 	return id.(CatID)
 }
 func (m *Metadata) SelectCategory(id CatID) error {
-	// log.Printf("adding %d to selection slice", id)
 	return m.catSelection.Append(id)
 }
 func (m *Metadata) UnselectCategory(id CatID) error {
-	// log.Printf("removing %d from selection slice", id)
 	return m.catSelection.Remove(id)
 }
 func (m *Metadata) ClearSelection() error {
 	return m.catSelection.Set([]any{})
 }
 func (m *Metadata) UpdateCatList() error {
+	// TODO fix this
 	m.getCatIDTree()
 	m.getCatIDList()
-	// TODO fix this
 	return nil
 }
 
 func (m *Metadata) GetProductTree() error {
 	// TODO break this thing up
-	// TODO also write an excluding function (get all except this one)
+	// TODO also write an *excluding* function (get all except this one)
 	query := `SELECT MfrID FROM Manufacturer ORDER BY Name ASC`
 	rows, err := m.b.db.Query(query)
 	if err != nil {
-		log.Println(err)
 		if !errors.Is(err, sql.ErrNoRows) {
 			panic(err)
 		}
@@ -182,7 +183,6 @@ func (m *Metadata) GetProductTree() error {
 			query := `SELECT ModelID FROM Model WHERE MfrID = @0 ORDER BY Name ASC`
 			rows, err := m.b.db.Query(query, MfrID)
 			if err != nil {
-				log.Println(err)
 				if !errors.Is(err, sql.ErrNoRows) {
 					panic(err)
 				}
@@ -219,8 +219,8 @@ func (m *Metadata) findCatIDFor(s string) (CatID, error) {
 	}
 
 	if !i.Valid {
-		log.Printf("findCatIDFor(s) i: %v", i)
-		return id, ErrNotFound
+		log.Printf("findCatIDFor(%s); i.Valid: %t, i.Int: %v", s, i.Valid, i.Int)
+		return id, err
 	}
 
 	id = CatID(i.Int)
@@ -241,11 +241,15 @@ func (m *Metadata) appendCatIDAndChildren(id CatID, spc string) {
 func (m *Metadata) getCatIDList() error {
 	query := `SELECT CatID FROM Category WHERE ParentID = 0 ORDER BY Name ASC`
 	rows, err := m.b.db.Query(query)
-	if err != nil {
-		log.Println(err)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
 	}
+	defer rows.Close()
 	m.Categories.Set([]string{})
 	m.CatIDList.Set([]any{})
+	if errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
 	for rows.Next() {
 		var CatID CatID
 		rows.Scan(&CatID)

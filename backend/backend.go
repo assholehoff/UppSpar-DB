@@ -4,7 +4,6 @@ import (
 	"UppSpar/backend/journal"
 	"database/sql"
 	"fmt"
-	"log"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -80,7 +79,7 @@ func MfrIDFor(s string) (MfrID, error) {
 	}
 
 	id = MfrID(i.Int)
-	log.Printf("MfrIDFor(%s) is %d", s, id)
+	// log.Printf("MfrIDFor(%s) is %d", s, id)
 	return id, nil
 }
 func ModelIDFor(s string) (ModelID, error) {
@@ -101,7 +100,7 @@ func ModelIDFor(s string) (ModelID, error) {
 	}
 
 	id = ModelID(i.Int)
-	log.Printf("ModelIDFor(%s) is %d", s, id)
+	// log.Printf("ModelIDFor(%s) is %d", s, id)
 	return id, nil
 }
 func UnitIDFor(s string) (UnitID, error) {

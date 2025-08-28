@@ -90,10 +90,10 @@ type modelView struct {
 
 func newModelView(b *backend.Backend) *modelView {
 	createItem := func(branch bool) fyne.CanvasObject {
-		// if branch {
-		// 	return widget.NewLabel("Template product name")
-		// }
-		return widget.NewLabel("Template category name")
+		if branch {
+			return widget.NewLabel("Template branch category name")
+		}
+		return widget.NewLabel("Template leaf category name")
 	}
 	updateItem := func(di binding.DataItem, branch bool, co fyne.CanvasObject) {
 		co.(*widget.Label).Bind(di.(binding.String))
