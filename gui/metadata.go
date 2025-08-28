@@ -3,6 +3,7 @@ package gui
 import (
 	"UppSpar/backend"
 	"log"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -13,7 +14,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	xwidget "fyne.io/x/fyne/widget"
 	midget "github.com/assholehoff/fyne-midget"
 	ttw "github.com/dweymouth/fyne-tooltip/widget"
 )
@@ -113,7 +113,7 @@ type categoryChecks struct {
 }
 
 type categoryEntries struct {
-	name *xwidget.CompletionEntry
+	name *midget.Entry
 }
 
 type categoryLabels struct {
@@ -166,7 +166,7 @@ func newCategoryView(b *backend.Backend) *categoryView {
 			weight: ttw.NewCheck(lang.X("metadata.category.check.weight", "metadata.category.check.weight"), func(b bool) {}),
 		},
 		entries: &categoryEntries{
-			name: xwidget.NewCompletionEntry([]string{}),
+			name: midget.NewEntry(),
 		},
 		labels: &categoryLabels{
 			name:   midget.NewLabel(lang.X("metadata.form.name", "metadata.form.name"), "", ""),
@@ -233,14 +233,42 @@ func newCategoryView(b *backend.Backend) *categoryView {
 }
 
 func (m *categoryFormView) Bind(b *backend.Backend, id backend.CatID) {
+	remove := func(s []string, r string) []string {
+		for i, v := range s {
+			if strings.TrimSpace(v) == r {
+				return append(s[:i], s[i+1:]...)
+			}
+		}
+		return s
+	}
+	var categories []string
+	fetchCategories := func() []string {
+		categories := []string{lang.L("None")}
+		cats, _ := b.Metadata.Categories.Get()
+		return append(categories, cats...)
+	}
+	categories = fetchCategories()
+	log.Println(categories)
+	self, _ := id.Name()
+	remove(categories, self)
+
+	m.selects.parent.SetOptions(categories)
 	m.entries.name.Bind(id.Category().Name)
 	m.checks.price.Bind(id.Category().Config["ShowPrice"])
 	m.checks.length.Bind(id.Category().Config["ShowLength"])
 	m.checks.volume.Bind(id.Category().Config["ShowVolume"])
 	m.checks.weight.Bind(id.Category().Config["ShowWeight"])
+
+	m.selects.parent.Bind(id.Category().Parent)
+
 	p, _ := id.ParentID()
 	if p == 0 {
 		m.selects.parent.SetSelected(lang.L("None"))
 	}
+
+	n, _ := p.Name()
+	m.selects.parent.SetSelected(n)
+
 	id.Category().Name.AddListener(binding.NewDataListener(func() { b.Metadata.UpdateCatList() }))
+	id.Category().Parent.AddListener(binding.NewDataListener(func() { b.Metadata.UpdateCatList() }))
 }

@@ -126,7 +126,7 @@ func (id MfrID) getBool(key string) (val bool, err error) {
 	if b.Valid {
 		val = b.Bool
 	} else {
-		log.Printf("MfrID.getBool(%s) error: %v", key, err)
+		log.Printf("MfrID(%d).getBool(%s) error: %s", id, key, err)
 	}
 	return
 }
@@ -135,7 +135,7 @@ func (id MfrID) getFloat(key string) (val float64, err error) {
 	if f.Valid {
 		val = f.Float64
 	} else {
-		log.Printf("MfrID.getFloat(%s) error: %v", key, err)
+		log.Printf("MfrID(%d).getFloat(%s) error: %s", id, key, err)
 	}
 	return
 }
@@ -143,7 +143,7 @@ func (id MfrID) getInt(key string) (val int, err error) {
 	i, err := getValue[sql.NullInt64]("Manufacturer", id, key)
 	val = int(i.Int64)
 	if !i.Valid {
-		log.Printf("MfrID.getInt(%s) error: %v", key, err)
+		log.Printf("MfrID(%d).getInt(%s) error: %s", id, key, err)
 	}
 	return
 }
@@ -152,7 +152,7 @@ func (id MfrID) getString(key string) (val string, err error) {
 	if s.Valid {
 		val = s.String
 	} else {
-		log.Printf("MfrID.getString(%s) error: %v", key, err)
+		log.Printf("MfrID(%d).getString(%s) error: %s", id, key, err)
 	}
 	return
 }

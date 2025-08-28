@@ -19,6 +19,18 @@ import (
 	midget "github.com/assholehoff/fyne-midget"
 )
 
+var _ fyne.Focusable = (*Entry)(nil)
+
+type Entry struct {
+	xwidget.CompletionEntry
+}
+
+func (e *Entry) FocusGained() {
+	// e.Entry.FocusGained()
+	e.CompletionEntry.FocusGained()
+	e.TypedShortcut(&fyne.ShortcutSelectAll{})
+}
+
 type itemView struct {
 	bound     backend.ItemID
 	container *fyne.Container
@@ -299,8 +311,8 @@ type formEntries struct {
 	ImgURL5      *widget.Entry
 	SpecsURL     *widget.Entry
 	LongDesc     *widget.Entry
-	Manufacturer *widget.Entry
-	Model        *widget.Entry
+	Manufacturer *Entry
+	Model        *Entry
 	ModelURL     *widget.Entry
 	Notes        *widget.Entry
 	Width        *widget.Entry
@@ -401,8 +413,8 @@ func newFormView(b *backend.Backend) *formView {
 			ImgURL5:      widget.NewEntry(),
 			SpecsURL:     widget.NewEntry(),
 			LongDesc:     widget.NewEntry(),
-			Manufacturer: widget.NewEntry(),
-			Model:        widget.NewEntry(),
+			Manufacturer: &Entry{},
+			Model:        &Entry{},
 			ModelURL:     widget.NewEntry(),
 			Notes:        widget.NewEntry(),
 			Width:        widget.NewEntry(),
@@ -466,6 +478,7 @@ func newFormView(b *backend.Backend) *formView {
 	v.entries.Notes.MultiLine = true
 	v.entries.Notes.SetMinRowsVisible(5)
 	v.entries.Notes.Wrapping = fyne.TextWrapWord
+
 	idbox := container.NewBorder(nil, nil, v.values.ItemID, nil, container.NewHBox(v.selects.Status))
 	spacebox := container.NewGridWithRows(1,
 		container.NewBorder(nil, nil, v.labels.Width, nil, v.entries.Width),

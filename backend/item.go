@@ -156,7 +156,7 @@ func (id *ItemStatusID) Scan(src any) error {
 			return ErrLossyConversion
 		}
 	default:
-		log.Printf("ItemStatusID(%d).Scan(%v) type error: %s", id, src, reflect.TypeOf(src).Name())
+		log.Printf("ItemStatusID(%d).Scan(%v) error: invalid type %s", id, src, reflect.TypeOf(src).Name())
 		return ErrInvalidType
 	}
 	return nil
@@ -403,7 +403,7 @@ func (id ItemID) getBool(key string) (val bool, err error) {
 	if b.Valid {
 		val = b.Bool
 	} else {
-		log.Printf("getBool(%s) b is invalid (NULL), err is %v", key, err)
+		log.Printf("ItemID(%d).getBool(%s) error: %s", id, key, err)
 		err = ErrSQLNullValue
 	}
 	return
@@ -413,7 +413,7 @@ func (id ItemID) getFloat(key string) (val float64, err error) {
 	if f.Valid {
 		val = f.Float64
 	} else {
-		log.Printf("getFloat(%s) %s is invalid (NULL), err is %v", key, key, err)
+		log.Printf("ItemID(%d).getFloat(%s) error: %s", id, key, err)
 		err = ErrSQLNullValue
 	}
 	return
@@ -422,7 +422,7 @@ func (id ItemID) getInt(key string) (val int, err error) {
 	i, err := getValue[sql.NullInt64]("Item", id, key)
 	val = int(i.Int64)
 	if !i.Valid {
-		log.Printf("getInt(%s) %s is invalid (NULL), err is %v", key, key, err)
+		log.Printf("ItemID(%d).getInt(%s) error: %s", id, key, err)
 		err = ErrSQLNullValue
 	}
 	return
@@ -432,7 +432,7 @@ func (id ItemID) getString(key string) (val string, err error) {
 	if s.Valid {
 		val = s.String
 	} else {
-		log.Printf("getInt(%s) %s is invalid (NULL), err is %v", key, key, err)
+		log.Printf("ItemID(%d).getInt(%s) error: %s", id, key, err)
 		err = ErrSQLNullValue
 	}
 	return
@@ -519,12 +519,15 @@ func (id ItemID) SetCategory() error {
 	if err != nil {
 		return fmt.Errorf("ItemID.SetCategory() error: %w", err)
 	}
-	log.Printf("SetCategory: \"%s\"", s)
+	log.Printf("ItemID(%d).SetCategory(%s)", id, s)
 	s = strings.TrimSpace(s)
-	log.Printf("SetCategory: \"%s\"", s)
+	log.Printf("ItemID(%d).SetCategory(%s)", id, s)
 	n, err := CatIDFor(s)
-	if err != nil {
-		return fmt.Errorf("ItemID.SetCategory() error: %w", err)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("ItemID(%d).SetCategory(%s) error: %s", id, s, err)
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		return sql.ErrNoRows
 	}
 	id.Item().CatID = n
 	return id.SetCatID(n)
@@ -646,13 +649,24 @@ func (id ItemID) SetMfrID(val MfrID) error {
 	return id.setInt(key, int(val))
 }
 func (id ItemID) SetManufacturer() error {
+	log.Printf("ItemID(%d).SetManufacturer()", id)
 	s, err := id.Item().Manufacturer.Get()
 	if err != nil {
 		return fmt.Errorf("ItemID.SetManufacturer() error: %w", err)
 	}
+	log.Printf("ItemID(%d).SetManufacturer(%s)", id, s)
+	if len(s) == 0 {
+		id.setString("Manufacturer", s)
+		return nil
+	}
 	n, err := MfrIDFor(s)
-	if err != nil {
-		return fmt.Errorf("ItemID.SetManufacturer() error: %w", err)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("ItemID(%d).SetManufacturer(%s) error: %s", id, s, err)
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		// no such manufacturer exists, set the name field instead
+		id.setString("Manufacturer", s)
+		return nil
 	}
 	id.Item().MfrID = n
 	return id.SetMfrID(n)
@@ -662,13 +676,26 @@ func (id ItemID) SetModelID(val ModelID) error {
 	return id.setInt(key, int(val))
 }
 func (id ItemID) SetModel() error {
+	key := "Model"
 	s, err := id.Item().Model.Get()
 	if err != nil {
-		return fmt.Errorf("ItemID.SetModel() error: %w", err)
+		return fmt.Errorf("ItemID(%d).SetModel(%s) error: %s", id, s, err)
+	}
+	log.Printf("ItemID(%d).SetModel(%s)", id, s)
+	if len(s) == 0 {
+		log.Printf("setting Model to the empty string...")
+		id.setString(key, s)
+		return nil
 	}
 	n, err := ModelIDFor(s)
-	if err != nil {
-		return fmt.Errorf("ItemID.SetModel() error: %w", err)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("ItemID(%d).SetModel(%s) error: %s", id, s, err)
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		// no such model exists, set the name field instead
+		log.Printf("setting Model to the string %s...", s)
+		id.setString(key, s)
+		return nil
 	}
 	id.Item().ModelID = n
 	return id.SetModelID(n)
@@ -846,7 +873,6 @@ func (id ItemID) setFloat(key string, val float64) error {
 }
 func (id ItemID) setInt(key string, val int) error {
 	err := setValue("Item", id, key, val)
-	log.Printf("set %s to %v", key, val)
 	id.updateDateModified()
 	return err
 }
@@ -938,21 +964,20 @@ func (m *Items) CreateNewItem() (ItemID, error) {
 	query := `INSERT INTO Item DEFAULT VALUES`
 	stmt, err := m.db.Prepare(query)
 	if err != nil {
-		log.Printf("Items.CreateNewItem() error: %v", err)
+		// log.Printf("Items.CreateNewItem() error: %s", err)
 		return i, fmt.Errorf("Items.CreateNewItem() error: %w", err)
 	}
 	defer stmt.Close()
 	res, err := stmt.Exec()
 	if err != nil {
-		log.Printf("Items.CreateNewItem() error: %v", err)
+		// log.Printf("Items.CreateNewItem() error: %s", err)
 		return i, fmt.Errorf("Items.CreateNewItem() error: %w", err)
 	}
 	id, err := res.LastInsertId()
 	if err != nil {
-		log.Printf("Items.CreateNewItem() error: %v", err)
+		// log.Printf("Items.CreateNewItem() error: %s", err)
 		return i, fmt.Errorf("Items.CreateNewItem() error: %w", err)
 	}
-	log.Printf("Items.CreateNewItem() result.LastInsertId() = %d", id)
 	i = ItemID(id)
 	m.Search()
 	return i, err
@@ -1004,12 +1029,10 @@ func (m *Items) DeleteItem(id ItemID) error {
 		return fmt.Errorf("DeleteItem error: %w", err)
 	}
 	defer stmt.Close()
-	res, err := stmt.Exec(ItemStatusDeleted, id)
+	_, err = stmt.Exec(ItemStatusDeleted, id)
 	if err != nil {
 		return fmt.Errorf("DeleteItem error: %w", err)
 	}
-	raf, _ := res.RowsAffected()
-	log.Printf("%d rows affected", raf)
 	m.ItemIDList.Remove(id)
 	delete(m.data, id)
 	return err
@@ -1247,7 +1270,7 @@ func (t *Item) getAllFields() {
 	t.DateModified = binding.NewString()
 
 	var Name, Currency, Unit, ImgURL1, ImgURL2, ImgURL3, ImgURL4, ImgURL5, SpecsURL sql.NullString
-	var AddDesc, LongDesc, Notes, DateCreated, DateModified sql.NullString
+	var AddDesc, LongDesc, Manufacturer, Model, ModelDesc, ModelURL, Notes, DateCreated, DateModified sql.NullString
 	var Price, QuantityInPrice, Vat, Stock, Width, Height, Depth, Volume, Weight sql.NullFloat64
 	var Priority sql.NullBool
 	var CatID CatID
@@ -1259,7 +1282,7 @@ func (t *Item) getAllFields() {
 	query := `SELECT 
 Name, CatID, Price, Currency, QuantityInPrice, Unit, Vat, 
 Priority, Stock, ImgURL1, ImgURL2, ImgURL3, ImgURL4, ImgURL5, SpecsURL, 
-AddDesc, LongDesc, MfrID, ModelID, Notes, 
+AddDesc, LongDesc, Manufacturer, MfrID, ModelID, Model, ModelDesc, ModelURL, Notes, 
 Width, Height, Depth, Volume, Weight, 
 LengthUnitID, VolumeUnitID, WeightUnitID, 
 ItemStatusID, DateCreated, DateModified 
@@ -1272,7 +1295,7 @@ FROM Item WHERE ItemID = @0`
 	err = stmt.QueryRow(t.ItemID).Scan(
 		&Name, &CatID, &Price, &Currency, &QuantityInPrice, &Unit, &Vat,
 		&Priority, &Stock, &ImgURL1, &ImgURL2, &ImgURL3, &ImgURL4, &ImgURL5, &SpecsURL,
-		&AddDesc, &LongDesc, &MfrID, &ModelID, &Notes,
+		&AddDesc, &LongDesc, &Manufacturer, &MfrID, &ModelID, &ModelDesc, &Model, &ModelURL, &Notes,
 		&Width, &Height, &Depth, &Volume, &Weight,
 		&LengthUnitID, &VolumeUnitID, &WeightUnitID,
 		&ItemStatusID, &DateCreated, &DateModified,
@@ -1289,25 +1312,10 @@ FROM Item WHERE ItemID = @0`
 		panic(err)
 	}
 
-	manufacturer, err = MfrID.Name()
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		panic(err)
-	}
-
-	model, err = ModelID.Name()
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		panic(err)
-	}
-
-	modelUrl, err = ModelID.ModelURL()
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		panic(err)
-	}
-
-	modelDesc, err = ModelID.Desc()
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		panic(err)
-	}
+	manufacturer = Manufacturer.String
+	model = Model.String
+	modelUrl = ModelURL.String
+	modelDesc = ModelDesc.String
 
 	width := Width.Float64
 	height := Height.Float64
@@ -1330,6 +1338,12 @@ FROM Item WHERE ItemID = @0`
 	ItemStatusString := ItemStatusID.LString()
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		panic(err)
+	}
+
+	if MfrID != 0 {
+		if n, _ := MfrID.Name(); manufacturer == "" && n != manufacturer {
+			manufacturer = n
+		}
 	}
 
 	if ModelID != 0 {

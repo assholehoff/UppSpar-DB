@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/lang"
 )
 
 type Category struct {
@@ -28,6 +29,7 @@ func newCategory(b *Backend, id CatID) *Category {
 	c.getNameStrings()
 	c.makeConfigMap()
 	c.Name.AddListener(binding.NewDataListener(func() { c.CatID.SetName() }))
+	c.Parent.AddListener(binding.NewDataListener(func() { c.CatID.SetParent() }))
 	return c
 }
 func (c *Category) makeConfigMap() {
@@ -58,6 +60,10 @@ func (c *Category) getNameStrings() {
 
 	c.Name.Set(Name.String)
 
+	if ParentID == 0 {
+		c.Parent.Set(lang.L("None"))
+		return
+	}
 	n, _ := ParentID.Name()
 	c.Parent.Set(n)
 }

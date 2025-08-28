@@ -3,6 +3,7 @@ package backend
 import (
 	"database/sql"
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -164,7 +165,7 @@ func (id ModelID) getBool(key string) (val bool, err error) {
 	if b.Valid {
 		val = b.Bool
 	} else {
-		log.Printf("ModelID.getBool(%s) b is invalid (NULL), err is %v", key, err)
+		log.Printf("ModelID(%d).getBool(%s) error: %v", id, key, err)
 	}
 	return
 }
@@ -173,7 +174,7 @@ func (id ModelID) getFloat(key string) (val float64, err error) {
 	if f.Valid {
 		val = f.Float64
 	} else {
-		log.Printf("ModelID.getFloat(%s) %s is invalid (NULL), err is %v", key, key, err)
+		log.Printf("ModelID(%d).getFloat(%s) error: %s", id, key, err)
 	}
 	return
 }
@@ -181,7 +182,7 @@ func (id ModelID) getInt(key string) (val int, err error) {
 	i, err := getValue[sql.NullInt64]("Model", id, key)
 	val = int(i.Int64)
 	if !i.Valid {
-		log.Printf("ModelID.getInt(%s) %s is invalid (NULL), err is %v", key, key, err)
+		log.Printf("ModelID(%d).getInt(%s) error: %s", id, key, err)
 	}
 	return
 }
@@ -190,7 +191,7 @@ func (id ModelID) getString(key string) (val string, err error) {
 	if s.Valid {
 		val = s.String
 	} else {
-		log.Printf("ModelID.getInt(%s) %s is invalid (NULL), err is %v", key, key, err)
+		log.Printf("ModelID(%d).getString(%s) error: %s", id, key, err)
 	}
 	return
 }
@@ -199,8 +200,9 @@ func (id ModelID) SetName() error {
 	key := "Name"
 	val, err := id.Model().Name.Get()
 	if err != nil {
-		return fmt.Errorf("ModelID.SetName() error: %w", err)
+		return err
 	}
+	log.Printf("ModelID(%d).SetName(%s) error: %s", id, val, err)
 	return id.setString(key, val)
 }
 func (id ModelID) SetCatID(val CatID) error {
@@ -226,11 +228,14 @@ func (id ModelID) SetMfrID(val MfrID) error {
 func (id ModelID) SetManufacturer() error {
 	s, err := id.Model().Manufacturer.Get()
 	if err != nil {
-		return fmt.Errorf("ModelID.SetManufacturer() error: %w", err)
+		return fmt.Errorf("ModelID(%d).SetManufacturer() error: %s", id, err)
 	}
 	n, err := MfrIDFor(s)
-	if err != nil {
-		return fmt.Errorf("ModelID.SetManufacturer() error: %w", err)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("ModelID(%d).SetManufacturer() error: %s", id, err)
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
 	}
 	id.Model().MfrID = n
 	return id.SetMfrID(n)

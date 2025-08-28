@@ -151,12 +151,15 @@ func (m *Metadata) ClearSelection() error {
 	return m.catSelection.Set([]any{})
 }
 func (m *Metadata) UpdateCatList() error {
-	// TODO
-	return m.getCatIDList()
+	m.getCatIDTree()
+	m.getCatIDList()
+	// TODO fix this
+	return nil
 }
 
 func (m *Metadata) GetProductTree() error {
 	// TODO break this thing up
+	// TODO also write an excluding function (get all except this one)
 	query := `SELECT MfrID FROM Manufacturer ORDER BY Name ASC`
 	rows, err := m.b.db.Query(query)
 	if err != nil {

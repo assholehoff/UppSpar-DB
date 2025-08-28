@@ -9,6 +9,9 @@ import (
 	"math"
 	"reflect"
 	"runtime"
+	"strings"
+
+	"fyne.io/fyne/v2/lang"
 )
 
 /* Categories and other metadata */
@@ -99,6 +102,17 @@ func (id CatID) ParentID() (CatID, error) {
 	val, err := id.getInt("ParentID")
 	return CatID(val), err
 }
+func (id CatID) Parents() int {
+	n := 0
+	return ancestors(id, n)
+}
+func ancestors(p CatID, n int) int {
+	if a, err := p.ParentID(); a != 0 && err == nil {
+		n++
+		ancestors(a, n)
+	}
+	return n
+}
 func (id CatID) Children() []CatID {
 	var children []CatID
 	query := `SELECT CatID FROM Category WHERE ParentID = @0 ORDER BY Name ASC`
@@ -118,23 +132,44 @@ func (id CatID) Children() []CatID {
 func (id CatID) Name() (val string, err error) {
 	return id.getString("Name")
 }
-
 func (id CatID) SetName() error {
 	key := "Name"
 	val, err := id.Category().Name.Get()
 	if err != nil {
-		return fmt.Errorf("MfrID.SetName() error: %w", err)
+		return fmt.Errorf("MfrID(%d).SetName(%s) error: %s", id, val, err)
 	}
 	return id.setString(key, val)
 }
+func (id CatID) SetParentID(v CatID) error {
+	return id.setInt("ParentID", int(v))
+}
+func (id CatID) SetParent() error {
+	p, err := id.Category().Parent.Get()
+	if err != nil {
+		panic(err)
+	}
+	p = strings.TrimSpace(p)
+	if p == lang.L("None") || p == "" {
+		return id.SetParentID(CatID(0))
+	}
+	pid, err := CatIDFor(p)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		panic(err)
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		log.Printf("no rows, pid is %d", pid)
+		pid = 0
+	}
+	return id.SetParentID(pid)
 
+}
 func (id CatID) Category() *Category {
 	return getCategory(be, id)
 }
 func (id CatID) ShowPrice() bool {
 	b, err := id.getConfig("ShowPrice")
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		log.Printf("CatID(%d).ShowPrice() error: %v", id, err)
+		log.Printf("CatID(%d).ShowPrice() error: %s", id, err)
 	}
 	return b
 }

@@ -9,11 +9,9 @@ import (
 
 type Manufacturer struct {
 	binding.DataItem
-	db      *sql.DB
-	MfrID   MfrID
-	Name    binding.String
-	branch  bool
-	touched bool
+	db    *sql.DB
+	MfrID MfrID
+	Name  binding.String
 }
 
 func newMfr(b *Backend, id MfrID) *Manufacturer {
