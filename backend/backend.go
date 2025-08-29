@@ -37,9 +37,9 @@ func NewBackend(file string) (*Backend, error) {
 	be.Items.GetAllItemIDs()
 
 	be.Metadata.getCatIDList()
-	be.Metadata.getCatIDTree()
-	be.Metadata.getAllMfrIDs()
-	be.Metadata.getAllModelIDs()
+	be.Metadata.GetCatIDTree()
+	be.Metadata.GetMfrIDs()
+	be.Metadata.GetModelIDs()
 	be.Metadata.GetProductTree()
 	be.Metadata.getAllUnitIDs()
 	be.Metadata.getAllItemStatusIDs()
@@ -75,7 +75,7 @@ func MfrIDFor(s string) (MfrID, error) {
 	stmt.QueryRow(s).Scan(&id)
 
 	if !i.Valid {
-		return id, ErrNotFound
+		return id, err
 	}
 
 	id = MfrID(i.Int)
@@ -90,13 +90,13 @@ func ModelIDFor(s string) (ModelID, error) {
 	query := `SELECT ModelID FROM Model WHERE Name = @0`
 	stmt, err := be.db.Prepare(query)
 	if err != nil {
-		return id, fmt.Errorf("ModelIDFor(%s) error: %w", s, err)
+		return id, err
 	}
 	defer stmt.Close()
 	stmt.QueryRow(s).Scan(&id)
 
 	if !i.Valid {
-		return id, ErrNotFound
+		return id, err
 	}
 
 	id = ModelID(i.Int)

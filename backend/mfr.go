@@ -26,6 +26,6 @@ func newMfr(b *Backend, id MfrID) *Manufacturer {
 		panic(err)
 	}
 	mfr.Name.Set(name)
-	mfr.Name.AddListener(binding.NewDataListener(func() { mfr.MfrID.SetName() }))
+	mfr.Name.AddListener(binding.NewDataListener(func() { mfr.MfrID.SetName(); b.Metadata.GetMfrIDs(); b.Metadata.GetProductTree() }))
 	return mfr
 }

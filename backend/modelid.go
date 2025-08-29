@@ -9,6 +9,8 @@ import (
 	"math"
 	"reflect"
 	"runtime"
+
+	"fyne.io/fyne/v2/lang"
 )
 
 var _ NumID = (ModelID)(0)
@@ -201,9 +203,8 @@ func (id ModelID) SetName() error {
 	key := "Name"
 	val, err := id.Model().Name.Get()
 	if err != nil {
-		return err
+		return fmt.Errorf("ModelID().SetName() error: %w", err)
 	}
-	log.Printf("ModelID(%d).SetName(%s) error: %s", id, val, err)
 	return id.setString(key, val)
 }
 func (id ModelID) SetCatID(val CatID) error {
@@ -227,23 +228,29 @@ func (id ModelID) SetMfrID(val MfrID) error {
 	return id.setInt(key, int(val))
 }
 func (id ModelID) SetManufacturer() error {
+	key := "Manufacturer"
 	s, err := id.Model().Manufacturer.Get()
 	if err != nil {
 		return fmt.Errorf("ModelID(%d).SetManufacturer() error: %s", id, err)
 	}
+	if s == lang.L("None") || s == "" {
+		return id.SetMfrID(MfrID(0))
+	}
 	n, err := MfrIDFor(s)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		log.Printf("ModelID(%d).SetManufacturer(%s) error: %s", id, s, err)
 		return fmt.Errorf("ModelID(%d).SetManufacturer() error: %s", id, err)
 	}
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil
+		id.setString(key, s)
+		n = MfrID(0)
 	}
 	id.Model().MfrID = n
 	return id.SetMfrID(n)
 }
 func (id ModelID) SetDesc() error {
 	key := "Desc"
-	val, err := id.Model().ImgURL1.Get()
+	val, err := id.Model().Desc.Get()
 	if err != nil {
 		return fmt.Errorf("ModelID.SetDesc() error: %w", err)
 	}
@@ -309,8 +316,10 @@ func (id ModelID) SetWidth() error {
 	key := "Width"
 	val, err := id.Model().widthFloat.Get()
 	if err != nil {
+		log.Println("error getting bound float")
 		return fmt.Errorf("ModelID.SetWidth() error: %w", err)
 	}
+	log.Printf("ModelID(%d).SetWidth(%f)", id, val)
 	return id.setFloat(key, val)
 }
 func (id ModelID) SetHeight() error {

@@ -281,6 +281,7 @@ VALUES ("UppSpar"), ("IKEA"), ("Kinnarps")`)
 		b.db.Exec(`CREATE TABLE Model(
 ModelID      INTEGER PRIMARY KEY AUTOINCREMENT, 
 Name         TEXT DEFAULT 'Ny modell', 
+Manufacturer TEXT DEFAULT '',
 MfrID        INT DEFAULT 0, 
 Desc         TEXT DEFAULT '', 
 ImgURL1      TEXT DEFAULT '', 

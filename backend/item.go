@@ -643,12 +643,13 @@ func (id ItemID) SetMfrID(val MfrID) error {
 	return id.setInt(key, int(val))
 }
 func (id ItemID) SetManufacturer() error {
+	key := "Manufacturer"
 	s, err := id.Item().Manufacturer.Get()
 	if err != nil {
 		return fmt.Errorf("ItemID.SetManufacturer() error: %w", err)
 	}
 	if len(s) == 0 {
-		id.setString("Manufacturer", s)
+		id.setString(key, s)
 		return nil
 	}
 	n, err := MfrIDFor(s)
@@ -657,7 +658,7 @@ func (id ItemID) SetManufacturer() error {
 	}
 	if errors.Is(err, sql.ErrNoRows) {
 		// no such manufacturer exists, set the name field instead
-		id.setString("Manufacturer", s)
+		id.setString(key, s)
 		return nil
 	}
 	id.Item().MfrID = n
@@ -682,11 +683,13 @@ func (id ItemID) SetModelName() error {
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("ItemID(%d).SetModel(%s) error: %s", id, s, err)
 	}
-	if errors.Is(err, sql.ErrNoRows) {
-		// no such model exists, set the individual name field instead
+	if errors.Is(err, sql.ErrNoRows) || n == 0 {
+		// no such model exists, set the name field
 		id.setString(key, s)
 		return nil
 	}
+	// log.Printf("ModelIDFor(s) returned something: %d, error: %s", n, err)
+	// set ModelID to returned ID
 	id.Item().ModelID = n
 	return id.SetModelID(n)
 }
