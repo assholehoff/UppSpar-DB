@@ -130,6 +130,7 @@ FROM Model WHERE ModelID = @0`
 	mdl.Weight = binding.FloatToStringWithFormat(mdl.weightFloat, "%.2f")
 
 	mdl.Name.AddListener(binding.NewDataListener(func() { mdl.ModelID.SetName(); b.Metadata.GetProductTree() }))
+	mdl.Category.AddListener(binding.NewDataListener(func() { mdl.ModelID.SetCategory() }))
 	mdl.Manufacturer.AddListener(binding.NewDataListener(func() { mdl.ModelID.SetManufacturer(); b.Metadata.GetProductTree() }))
 	mdl.Category.AddListener(binding.NewDataListener(func() { mdl.ModelID.SetCategory() }))
 	mdl.Desc.AddListener(binding.NewDataListener(func() { mdl.ModelID.SetDesc() }))

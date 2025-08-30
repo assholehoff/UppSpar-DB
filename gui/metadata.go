@@ -74,6 +74,7 @@ type productEntries struct {
 }
 type productLabels struct {
 	Name         *widget.Label
+	Category     *widget.Label
 	Manufacturer *widget.Label
 	Desc         *widget.Label
 	Dimensions   *widget.Label
@@ -92,6 +93,7 @@ type productLabels struct {
 }
 type productSelects struct {
 	Manufacturer *widget.Select
+	Category     *widget.Select
 	LengthUnit   *widget.Select
 	VolumeUnit   *widget.Select
 	WeightUnit   *widget.Select
@@ -100,6 +102,11 @@ type productSelects struct {
 func newProductView(b *backend.Backend) *productView {
 	pv := &productView{}
 
+	categories, _ := b.Metadata.Categories.Get()
+	b.Metadata.Categories.AddListener(binding.NewDataListener(func() {
+		categories, _ := b.Metadata.Categories.Get()
+		pv.form.selects.Category.SetOptions(categories)
+	}))
 	manufacturers, _ := b.Metadata.MfrNameList.Get()
 	b.Metadata.MfrNameList.AddListener(binding.NewDataListener(func() {
 		manufacturers, _ := b.Metadata.MfrNameList.Get()
@@ -164,6 +171,7 @@ func newProductView(b *backend.Backend) *productView {
 		},
 		labels: &productLabels{
 			Name:         widget.NewLabel(lang.L("Name")),
+			Category:     widget.NewLabel(lang.X("item.form.label.category", "item.form.label.category")),
 			Manufacturer: widget.NewLabel(lang.L("Manufacturer")),
 			Desc:         widget.NewLabel(lang.X("metadata.product.form.description", "metadata.product.form.description")),
 			Dimensions:   widget.NewLabel(lang.L("Dimensions")),
@@ -182,6 +190,7 @@ func newProductView(b *backend.Backend) *productView {
 		},
 		selects: &productSelects{
 			Manufacturer: widget.NewSelect(manufacturers, func(s string) {}),
+			Category:     widget.NewSelect(categories, func(s string) {}),
 			LengthUnit:   widget.NewSelect(lengthUnits, func(s string) {}),
 			VolumeUnit:   widget.NewSelect(volumeUnits, func(s string) {}),
 			WeightUnit:   widget.NewSelect(weightUnits, func(s string) {}),
@@ -189,6 +198,7 @@ func newProductView(b *backend.Backend) *productView {
 	}
 	pv.form.entries.Desc.MultiLine = true
 	pv.form.entries.Desc.SetMinRowsVisible(5)
+	pv.form.entries.Desc.Wrapping = fyne.TextWrapWord
 
 	dimBox := container.NewGridWithRows(1,
 		container.NewBorder(nil, nil, pv.form.labels.Width, nil, pv.form.entries.Width),
@@ -205,6 +215,7 @@ func newProductView(b *backend.Backend) *productView {
 	f := container.New(layout.NewFormLayout(),
 		pv.form.labels.Name, pv.form.entries.Name,
 		pv.form.labels.Manufacturer, pv.form.selects.Manufacturer,
+		pv.form.labels.Category, pv.form.selects.Category,
 		pv.form.labels.Desc, pv.form.entries.Desc,
 		pv.form.labels.ImgURL1, pv.form.entries.ImgURL1,
 		pv.form.labels.SpecsURL, pv.form.entries.SpecsURL,
@@ -259,6 +270,7 @@ func (pv *productView) Clear() {
 	pv.form.labels.Name.SetText(lang.L("Name"))
 
 	pv.form.selects.Manufacturer.ClearSelected()
+	pv.form.selects.Category.ClearSelected()
 	pv.form.selects.LengthUnit.ClearSelected()
 	pv.form.selects.VolumeUnit.ClearSelected()
 	pv.form.selects.WeightUnit.ClearSelected()
@@ -281,6 +293,7 @@ func (pv *productView) Disable() {
 	pv.form.entries.Weight.Disable()
 
 	pv.form.selects.Manufacturer.Disable()
+	pv.form.selects.Category.Disable()
 	pv.form.selects.LengthUnit.Disable()
 	pv.form.selects.VolumeUnit.Disable()
 	pv.form.selects.WeightUnit.Disable()
@@ -302,6 +315,7 @@ func (pv *productView) Enable() {
 	pv.form.entries.Weight.Enable()
 
 	pv.form.selects.Manufacturer.Enable()
+	pv.form.selects.Category.Enable()
 	pv.form.selects.LengthUnit.Enable()
 	pv.form.selects.VolumeUnit.Enable()
 	pv.form.selects.WeightUnit.Enable()
@@ -323,6 +337,7 @@ func (pv *productView) Hide() {
 	pv.form.entries.Weight.Hide()
 
 	pv.form.labels.Name.Hide()
+	pv.form.labels.Category.Hide()
 	pv.form.labels.Manufacturer.Hide()
 	pv.form.labels.Desc.Hide()
 	pv.form.labels.Dimensions.Hide()
@@ -340,6 +355,7 @@ func (pv *productView) Hide() {
 	pv.form.labels.Weight.Hide()
 
 	pv.form.selects.Manufacturer.Hide()
+	pv.form.selects.Category.Hide()
 	pv.form.selects.LengthUnit.Hide()
 	pv.form.selects.VolumeUnit.Hide()
 	pv.form.selects.WeightUnit.Hide()
@@ -378,6 +394,7 @@ func (pv *productView) LoadModel(id backend.ModelID) {
 
 	pv.form.labels.Name.SetText(lang.L("Product"))
 
+	pv.form.selects.Category.Bind(id.Model().Category)
 	pv.form.selects.Manufacturer.Bind(id.Model().Manufacturer)
 	pv.form.selects.LengthUnit.Bind(id.Model().LengthUnit)
 	pv.form.selects.VolumeUnit.Bind(id.Model().VolumeUnit)
@@ -403,6 +420,7 @@ func (pv *productView) LoadModel(id backend.ModelID) {
 	pv.form.entries.Volume.Enable()
 	pv.form.entries.Weight.Enable()
 	pv.form.selects.Manufacturer.Enable()
+	pv.form.selects.Category.Enable()
 	pv.form.selects.LengthUnit.Enable()
 	pv.form.selects.VolumeUnit.Enable()
 	pv.form.selects.WeightUnit.Enable()
@@ -423,6 +441,7 @@ func (pv *productView) LoadModel(id backend.ModelID) {
 	pv.form.entries.Weight.Show()
 
 	pv.form.labels.Name.Show()
+	pv.form.labels.Category.Show()
 	pv.form.labels.Manufacturer.Show()
 	pv.form.labels.Desc.Show()
 	pv.form.labels.Dimensions.Show()
@@ -440,6 +459,7 @@ func (pv *productView) LoadModel(id backend.ModelID) {
 	pv.form.labels.Weight.Show()
 
 	pv.form.selects.Manufacturer.Show()
+	pv.form.selects.Category.Show()
 	pv.form.selects.LengthUnit.Show()
 	pv.form.selects.VolumeUnit.Show()
 	pv.form.selects.WeightUnit.Show()
@@ -461,6 +481,7 @@ func (pv *productView) Unbind() {
 	pv.form.entries.Weight.Unbind()
 
 	pv.form.selects.Manufacturer.Unbind()
+	pv.form.selects.Category.Unbind()
 	pv.form.selects.LengthUnit.Unbind()
 	pv.form.selects.VolumeUnit.Unbind()
 	pv.form.selects.WeightUnit.Unbind()

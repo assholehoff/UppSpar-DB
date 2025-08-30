@@ -9,6 +9,7 @@ import (
 	"math"
 	"reflect"
 	"runtime"
+	"strings"
 
 	"fyne.io/fyne/v2/lang"
 )
@@ -216,6 +217,7 @@ func (id ModelID) SetCategory() error {
 	if err != nil {
 		return fmt.Errorf("ModelID.SetCategory() error: %w", err)
 	}
+	s = strings.TrimSpace(s)
 	n, err := CatIDFor(s)
 	if err != nil {
 		return fmt.Errorf("ModelID.SetCategory() error: %w", err)
