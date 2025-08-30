@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"slices"
+	"strconv"
 	"strings"
 
 	"fyne.io/fyne/v2/data/binding"
@@ -18,9 +19,8 @@ type Metadata struct {
 	mfrData      map[MfrID]*Manufacturer
 	modelData    map[ModelID]*Model
 
-	catSelection   binding.UntypedList
-	mfrSelection   binding.UntypedList
-	modelSelection binding.UntypedList
+	catSelection  binding.UntypedList
+	prodSelection binding.String
 
 	CatIDList   binding.UntypedList
 	CatIDTree   binding.UntypedTree
@@ -36,13 +36,12 @@ type Metadata struct {
 
 func NewMetadata(b *Backend) *Metadata {
 	return &Metadata{
-		b:              b,
-		categoryData:   make(map[CatID]*Category),
-		mfrData:        make(map[MfrID]*Manufacturer),
-		modelData:      make(map[ModelID]*Model),
-		catSelection:   binding.NewUntypedList(),
-		mfrSelection:   binding.NewUntypedList(),
-		modelSelection: binding.NewUntypedList(),
+		b:             b,
+		categoryData:  make(map[CatID]*Category),
+		mfrData:       make(map[MfrID]*Manufacturer),
+		modelData:     make(map[ModelID]*Model),
+		catSelection:  binding.NewUntypedList(),
+		prodSelection: binding.NewString(),
 
 		Categories:       binding.NewStringList(),
 		CatIDList:        binding.NewUntypedList(),
@@ -90,12 +89,32 @@ func (m *Metadata) CreateNewManufacturer() (id MfrID, err error) {
 	return
 }
 func (m *Metadata) CreateNewProduct() (id ModelID, err error) {
-	query := `INSERT INTO Model DEFAULT VALUES`
-	res, err := m.b.db.Exec(query)
+	var res sql.Result
+	sel, err := m.prodSelection.Get()
 	if err != nil {
 		err = fmt.Errorf("Metadata.CreateNewModel() error: %w", err)
 		return
 	}
+	if strings.HasPrefix(sel, "MDL-") {
+		sel = strings.TrimPrefix(sel, "MDL-")
+		num, _ := strconv.Atoi(sel)
+		mid, _ := ModelID(num).MfrID()
+		query := `INSERT INTO Model (Name, MfrID) VALUES ('Ny produkt', @0)`
+		res, err = m.b.db.Exec(query, mid)
+	} else if strings.HasPrefix(sel, "MFR-") {
+		sel = strings.TrimPrefix(sel, "MFR-")
+		num, _ := strconv.Atoi(sel)
+		query := `INSERT INTO Model (Name, MfrID) VALUES ('Ny produkt', @0)`
+		res, err = m.b.db.Exec(query, MfrID(num))
+	} else {
+		query := `INSERT INTO Model DEFAULT VALUES`
+		res, err = m.b.db.Exec(query)
+	}
+	if err != nil {
+		err = fmt.Errorf("Metadata.CreateNewModel() error: %w", err)
+		return
+	}
+
 	i, err := res.LastInsertId()
 	if err != nil {
 		err = fmt.Errorf("Metadata.CreateNewModel() error: %w", err)
@@ -200,11 +219,20 @@ func (m *Metadata) GetCatIDForTreeItem(index widget.TreeNodeID) CatID {
 func (m *Metadata) SelectCategory(id CatID) error {
 	return m.catSelection.Append(id)
 }
+func (m *Metadata) SelectProduct(id NumID) error {
+	return m.prodSelection.Set(id.TString())
+}
 func (m *Metadata) UnselectCategory(id CatID) error {
 	return m.catSelection.Remove(id)
 }
+func (m *Metadata) UnselectProduct(id NumID) error {
+	return m.prodSelection.Set("")
+}
 func (m *Metadata) ClearSelection() error {
 	return m.catSelection.Set([]any{})
+}
+func (m *Metadata) ClearProdSelection() error {
+	return m.prodSelection.Set("")
 }
 func (m *Metadata) UpdateCatList() error {
 	// TODO fix this

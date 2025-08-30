@@ -3,6 +3,7 @@ package gui
 import (
 	"UppSpar/backend"
 	"UppSpar/backend/bridge"
+	"fmt"
 	"log"
 	"regexp"
 	"strconv"
@@ -79,16 +80,22 @@ func newProductView(b *backend.Backend) *productView {
 
 	createItem := func(branch bool) fyne.CanvasObject {
 		if branch {
-			return &widget.Label{
+			return container.NewHBox(&widget.Label{
 				Text:      "Template branch category name",
 				TextStyle: fyne.TextStyle{Bold: true},
-			}
+			}, widget.NewLabel("(000)"))
 		}
 		return widget.NewLabel("Template leaf category name")
 	}
 
 	updateItem := func(di binding.DataItem, branch bool, co fyne.CanvasObject) {
-		co.(*widget.Label).Bind(di.(binding.String))
+		if branch {
+			co.(*fyne.Container).Objects[0].(*widget.Label).Bind(di.(binding.String))
+			// TODO use untyped tree
+			// co.(*fyne.Container).Objects[1].(*widget.Label).SetText(fmt.Sprintf("(%d)", len()))
+		} else {
+			co.(*widget.Label).Bind(di.(binding.String))
+		}
 	}
 
 	tree := widget.NewTreeWithData(b.Metadata.ProductTree, createItem, updateItem)
@@ -102,6 +109,7 @@ func newProductView(b *backend.Backend) *productView {
 				log.Printf("strconv.Atoi(%s) error: %s", mdl, err)
 				panic(err)
 			}
+			b.Metadata.SelectProduct(backend.ModelID(ModelID))
 			p.LoadModel(b, backend.ModelID(ModelID))
 		} else {
 			r := regexp.MustCompile(`MFR-\d+([^FR]*)$`)
@@ -113,10 +121,11 @@ func newProductView(b *backend.Backend) *productView {
 				log.Printf("strconv.Atoi(%s) error: %s", mfr, err)
 				panic(err)
 			}
+			b.Metadata.SelectProduct(backend.MfrID(MfrID))
 			p.LoadMfr(backend.MfrID(MfrID))
 		}
 	}
-	// t.OnUnselected = func(uid widget.TreeNodeID) {}
+	tree.OnUnselected = func(uid widget.TreeNodeID) { b.Metadata.ClearProdSelection() }
 
 	p.entry = make(bridge.Entries)
 	p.label = make(bridge.Labels)
@@ -185,18 +194,18 @@ func newProductView(b *backend.Backend) *productView {
 	t := container.NewBorder(
 		container.NewHBox(
 			widget.NewButton(lang.L("New Manufacturer"), func() {
-				_, err := b.Metadata.CreateNewManufacturer()
+				id, err := b.Metadata.CreateNewManufacturer()
 				if err != nil {
 					return
 				}
-				// pv.LoadMfr(id)
+				p.LoadMfr(id)
 			}),
 			widget.NewButton(lang.L("New Product"), func() {
-				_, err := b.Metadata.CreateNewProduct()
+				id, err := b.Metadata.CreateNewProduct()
 				if err != nil {
 					return
 				}
-				// pv.LoadModel(id)
+				p.LoadModel(b, id)
 			}),
 		),
 		nil, nil, nil, tree,
@@ -287,46 +296,27 @@ func (pv *productView) Unbind() {
 	pv.selects.Unbind()
 }
 
-type categoryChecks struct {
-	price  *ttw.Check
-	length *ttw.Check
-	volume *ttw.Check
-	weight *ttw.Check
-}
-
-type categoryEntries struct {
-	name *midget.Entry
-}
-
-type categoryLabels struct {
-	name   *midget.Label
-	parent *midget.Label
-}
-
-type categorySelects struct {
-	parent *widget.Select
-}
-
-type categoryFormView struct {
-	container *fyne.Container
-	checks    *categoryChecks
-	entries   *categoryEntries
-	labels    *categoryLabels
-	selects   *categorySelects
-}
-
 type categoryView struct {
 	container *container.Split
-	form      *categoryFormView
+	check     bridge.Checks
+	entry     bridge.Entries
+	label     bridge.Labels
+	selects   bridge.Selects
 	tree      *widget.Tree
 	toolbar   *widget.Toolbar
 }
 
 func newCategoryView(b *backend.Backend) *categoryView {
+	var cv *categoryView
+
 	createTreeItem := func(branch bool) fyne.CanvasObject {
 		if branch {
+			return container.NewHBox(
+				widget.NewLabel("Template branch category name"),
+				widget.NewLabel("(1)"),
+			)
 		}
-		return widget.NewLabel("Template category name")
+		return widget.NewLabel("Template leaf category name")
 	}
 	updateTreeItem := func(di binding.DataItem, branch bool, co fyne.CanvasObject) {
 		v, err := di.(binding.Untyped).Get()
@@ -335,113 +325,128 @@ func newCategoryView(b *backend.Backend) *categoryView {
 			return
 		}
 		CatID := v.(backend.CatID)
-		co.(*widget.Label).Bind(CatID.Category().Name)
+		if branch {
+			co.(*fyne.Container).Objects[0].(*widget.Label).Bind(CatID.Category().Name)
+			co.(*fyne.Container).Objects[1].(*widget.Label).SetText(fmt.Sprintf("(%d)", len(CatID.Category().CatID.Children())))
+		} else {
+			co.(*widget.Label).Bind(CatID.Category().Name)
+		}
 	}
-	m := &categoryView{
+	cv = &categoryView{
 		tree: widget.NewTreeWithData(b.Metadata.CatIDTree, createTreeItem, updateTreeItem),
 	}
-	m.form = &categoryFormView{
-		checks: &categoryChecks{
-			price:  ttw.NewCheck(lang.X("metadata.category.check.price", "metadata.category.check.price"), func(b bool) {}),
-			length: ttw.NewCheck(lang.X("metadata.category.check.length", "metadata.category.check.length"), func(b bool) {}),
-			volume: ttw.NewCheck(lang.X("metadata.category.check.volume", "metadata.category.check.volume"), func(b bool) {}),
-			weight: ttw.NewCheck(lang.X("metadata.category.check.weight", "metadata.category.check.weight"), func(b bool) {}),
-		},
-		entries: &categoryEntries{
-			name: midget.NewEntry(),
-		},
-		labels: &categoryLabels{
-			name:   midget.NewLabel(lang.X("metadata.form.name", "metadata.form.name"), "", ""),
-			parent: midget.NewLabel(lang.X("metadata.form.parent", "metadata.form.parent"), "", ""),
-		},
-		selects: &categorySelects{
-			parent: widget.NewSelect([]string{lang.L("None")}, func(s string) {}),
-		},
+	cv.tree.OnSelected = func(uid widget.TreeNodeID) {
+		b.Metadata.SelectCategory(b.Metadata.GetCatIDForTreeItem(uid))
+		cv.Load(b, b.Metadata.GetCatIDForTreeItem(uid))
 	}
-	m.form.container = container.New(layout.NewFormLayout(),
-		m.form.labels.parent, m.form.selects.parent,
-		m.form.labels.name, m.form.entries.name,
-		layout.NewSpacer(), m.form.checks.price,
+	cv.tree.OnUnselected = func(uid widget.TreeNodeID) {
+		b.Metadata.UnselectCategory(b.Metadata.GetCatIDForTreeItem(uid))
+		cv.Unload()
+	}
+
+	cv.check = make(bridge.Checks)
+	cv.entry = make(bridge.Entries)
+	cv.label = make(bridge.Labels)
+	cv.selects = make(bridge.Selects)
+
+	cv.check["Price"] = ttw.NewCheck(lang.X("metadata.category.check.price", "metadata.category.check.price"), func(b bool) {})
+	cv.check["Length"] = ttw.NewCheck(lang.X("metadata.category.check.length", "metadata.category.check.length"), func(b bool) {})
+	cv.check["Volume"] = ttw.NewCheck(lang.X("metadata.category.check.volume", "metadata.category.check.volume"), func(b bool) {})
+	cv.check["Weight"] = ttw.NewCheck(lang.X("metadata.category.check.weight", "metadata.category.check.weight"), func(b bool) {})
+
+	cv.entry["Name"] = midget.NewEntry()
+
+	cv.label["Name"] = ttw.NewLabel(lang.X("metadata.form.name", "metadata.form.name"))
+	cv.label["Parent"] = ttw.NewLabel(lang.X("metadata.form.parent", "metadata.form.parent"))
+
+	cv.selects["Parent"] = ttw.NewSelect([]string{}, func(s string) {})
+
+	form := container.New(layout.NewFormLayout(),
+		cv.label["Parent"], cv.selects["Parent"],
+		cv.label["Name"], cv.entry["Name"],
+		layout.NewSpacer(), cv.check["Price"],
 		layout.NewSpacer(), container.NewHBox(
-			m.form.checks.length,
-			m.form.checks.volume,
-			m.form.checks.weight,
+			cv.check["Length"],
+			cv.check["Volume"],
+			cv.check["Weight"],
 		),
 	)
-	m.tree.OnSelected = func(uid widget.TreeNodeID) {
-		b.Metadata.SelectCategory(b.Metadata.GetCatIDForTreeItem(uid))
-		m.form.Bind(b, b.Metadata.GetCatIDForTreeItem(uid))
-	}
-	m.tree.OnUnselected = func(uid widget.TreeNodeID) {
-		b.Metadata.UnselectCategory(b.Metadata.GetCatIDForTreeItem(uid))
-		m.form.entries.name.Unbind()
-	}
-	m.toolbar = widget.NewToolbar(
+
+	cv.toolbar = widget.NewToolbar(
 		widget.NewToolbarAction(theme.ContentAddIcon(), func() {
-			m.toolbar.Items[0].(*widget.ToolbarAction).Disable()
+			cv.toolbar.Items[0].(*widget.ToolbarAction).Disable()
 			go func() {
 				b.Metadata.CreateNewCategory()
 				fyne.Do(func() {
-					time.Sleep(300 * time.Millisecond) // Prevent accidental multiclick
-					m.toolbar.Items[0].(*widget.ToolbarAction).Enable()
+					time.Sleep(300 * time.Millisecond)
+					cv.toolbar.Items[0].(*widget.ToolbarAction).Enable()
 				})
 			}()
 		}),
 		widget.NewToolbarAction(theme.ContentRemoveIcon(), func() {
-			m.toolbar.Items[1].(*widget.ToolbarAction).Disable()
+			cv.toolbar.Items[1].(*widget.ToolbarAction).Disable()
 			go func() {
 				b.Metadata.DeleteCategory()
 				fyne.Do(func() {
 					time.Sleep(300 * time.Millisecond)
-					m.toolbar.Items[1].(*widget.ToolbarAction).Enable()
+					cv.toolbar.Items[1].(*widget.ToolbarAction).Enable()
 				})
 			}()
 		}),
 		widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
-			m.toolbar.Items[2].(*widget.ToolbarAction).Disable()
+			cv.toolbar.Items[2].(*widget.ToolbarAction).Disable()
 			go func() {
 				b.Metadata.CopyCategory()
 				fyne.Do(func() {
 					time.Sleep(300 * time.Millisecond)
-					m.toolbar.Items[2].(*widget.ToolbarAction).Enable()
+					cv.toolbar.Items[2].(*widget.ToolbarAction).Enable()
 				})
 			}()
 		}),
 	)
-	listView := container.NewBorder(m.toolbar, nil, nil, nil, m.tree)
-	m.container = container.NewHSplit(listView, m.form.container)
-	m.container.SetOffset(0.25)
-	return m
+
+	list := container.NewBorder(cv.toolbar, nil, nil, nil, cv.tree)
+	cv.container = container.NewHSplit(list, form)
+	cv.container.SetOffset(0.25)
+	cv.Clear()
+	cv.Disable()
+	return cv
 }
 
-func (m *categoryFormView) Bind(b *backend.Backend, id backend.CatID) {
-	var categories []string
-	fetchCategories := func() []string {
+func (c *categoryView) Clear() {
+	c.entry.Clear()
+	c.selects.Clear()
+}
+func (c *categoryView) Disable() {
+	c.entry.Disable()
+	c.selects.Disable()
+}
+func (c *categoryView) Enable() {
+	c.entry.Enable()
+	c.selects.Enable()
+}
+func (c *categoryView) Load(b *backend.Backend, id backend.CatID) {
+	b.Metadata.Categories.AddListener(binding.NewDataListener(func() {
 		categories, _ := b.Metadata.Categories.Get()
-		return append([]string{lang.L("None")}, categories...)
-	}
-	categories = fetchCategories()
-	log.Println(categories)
-	self, _ := id.Name()
-	remove(categories, self)
+		self, _ := id.Name()
+		remove(categories, self)
+		c.selects["Parent"].SetOptions(append([]string{lang.L("None")}, categories...))
+	}))
 
-	m.selects.parent.SetOptions(categories)
-	m.entries.name.Bind(id.Category().Name)
-	m.checks.price.Bind(id.Category().Config["ShowPrice"])
-	m.checks.length.Bind(id.Category().Config["ShowLength"])
-	m.checks.volume.Bind(id.Category().Config["ShowVolume"])
-	m.checks.weight.Bind(id.Category().Config["ShowWeight"])
+	c.entry["Name"].Bind(id.Category().Name)
+	c.check["Price"].Bind(id.Category().Config["ShowPrice"])
+	c.check["Length"].Bind(id.Category().Config["ShowLength"])
+	c.check["Volume"].Bind(id.Category().Config["ShowVolume"])
+	c.check["Weight"].Bind(id.Category().Config["ShowWeight"])
 
-	m.selects.parent.Bind(id.Category().Parent)
+	c.selects["Parent"].Bind(id.Category().Parent)
 
 	p, _ := id.ParentID()
 	if p == 0 {
-		m.selects.parent.SetSelected(lang.L("None"))
+		c.selects["Parent"].SetSelectedIndex(0)
 	}
-
-	n, _ := p.Name()
-	m.selects.parent.SetSelected(n)
 
 	id.Category().Name.AddListener(binding.NewDataListener(func() { b.Metadata.UpdateCatList() }))
 	id.Category().Parent.AddListener(binding.NewDataListener(func() { b.Metadata.UpdateCatList() }))
 }
+func (c *categoryView) Unload() {}
