@@ -2,6 +2,7 @@ package gui
 
 import (
 	"UppSpar/backend"
+	"UppSpar/backend/bridge"
 	"log"
 	"regexp"
 	"strconv"
@@ -47,105 +48,14 @@ func newMetadataTabs(c *categoryView, mdl *productView) *container.AppTabs {
 
 type productView struct {
 	container *container.Split
-	entry     entryMap
-	// form      *productForm // TODO replace with maps: map[string]*midget.Entry, map[string]*widget.Label, map[string]*widget.Select
-	label   labelMap
-	tree    *widget.Tree
-	selects selectMap
+	entry     bridge.Entries
+	label     bridge.Labels
+	selects   bridge.Selects
 }
 
 var entryKeys = []string{"Name", "Desc", "ImgURL1", "ImgURL2", "ImgURL3", "ImgURL4", "ImgURL5", "SpecsURL", "ModelURL", "Width", "Height", "Depth", "Volume", "Weight"}
 var labelKeys = []string{"Name", "Category", "Manufacturer", "Desc", "Dimensions", "ImgURL1", "ImgURL2", "ImgURL3", "ImgURL4", "ImgURL5", "SpecsURL", "ModelURL", "Width", "Height", "Depth", "Volume", "Weight"}
 var selectKeys = []string{"Manufacturer", "Category", "LengthUnit", "VolumeUnit", "WeightUnit"}
-
-type entryMap map[string]*midget.Entry
-
-func (m entryMap) Clear() {
-	for _, val := range m {
-		val.SetText("")
-	}
-}
-func (m entryMap) Disable() {
-	for _, val := range m {
-		val.Disable()
-	}
-}
-func (m entryMap) Enable() {
-	for _, val := range m {
-		val.Enable()
-	}
-}
-func (m entryMap) Unbind() {
-	for _, val := range m {
-		val.Unbind()
-	}
-}
-func (m entryMap) Hide() {
-	for _, val := range m {
-		val.Hide()
-	}
-}
-func (m entryMap) Show() {
-	for _, val := range m {
-		val.Show()
-	}
-}
-
-type labelMap map[string]*widget.Label
-
-func (m labelMap) Clear() {
-	for _, val := range m {
-		val.SetText("")
-	}
-}
-func (m labelMap) Unbind() {
-	for _, val := range m {
-		val.Unbind()
-	}
-}
-func (m labelMap) Hide() {
-	for _, val := range m {
-		val.Hide()
-	}
-}
-func (m labelMap) Show() {
-	for _, val := range m {
-		val.Show()
-	}
-}
-
-type selectMap map[string]*widget.Select
-
-func (m selectMap) Clear() {
-	for _, val := range m {
-		val.ClearSelected()
-	}
-}
-func (m selectMap) Disable() {
-	for _, val := range m {
-		val.Disable()
-	}
-}
-func (m selectMap) Enable() {
-	for _, val := range m {
-		val.Enable()
-	}
-}
-func (m selectMap) Unbind() {
-	for _, val := range m {
-		val.Unbind()
-	}
-}
-func (m selectMap) Hide() {
-	for _, val := range m {
-		val.Hide()
-	}
-}
-func (m selectMap) Show() {
-	for _, val := range m {
-		val.Show()
-	}
-}
 
 func newProductView(b *backend.Backend) *productView {
 	p := &productView{}
@@ -155,12 +65,14 @@ func newProductView(b *backend.Backend) *productView {
 		categories, _ := b.Metadata.Categories.Get()
 		p.selects["Category"].SetOptions(categories)
 	}))
+
 	manufacturers, _ := b.Metadata.MfrNameList.Get()
 	b.Metadata.MfrNameList.AddListener(binding.NewDataListener(func() {
 		manufacturers, _ := b.Metadata.MfrNameList.Get()
 		manufacturers = append([]string{lang.L("None")}, manufacturers...)
 		p.selects["Manufacturer"].SetOptions(manufacturers)
 	}))
+
 	lengthUnits := []string{"mm", "cm", "dm", "m"}
 	volumeUnits := []string{"ml", "cl", "dl", "l"}
 	weightUnits := []string{"g", "hg", "kg"}
@@ -174,9 +86,11 @@ func newProductView(b *backend.Backend) *productView {
 		}
 		return widget.NewLabel("Template leaf category name")
 	}
+
 	updateItem := func(di binding.DataItem, branch bool, co fyne.CanvasObject) {
 		co.(*widget.Label).Bind(di.(binding.String))
 	}
+
 	tree := widget.NewTreeWithData(b.Metadata.ProductTree, createItem, updateItem)
 	tree.OnSelected = func(uid widget.TreeNodeID) {
 		r := regexp.MustCompile(`MDL-\d+$`)
@@ -204,9 +118,9 @@ func newProductView(b *backend.Backend) *productView {
 	}
 	// t.OnUnselected = func(uid widget.TreeNodeID) {}
 
-	p.entry = make(entryMap)
-	p.label = make(labelMap)
-	p.selects = make(selectMap)
+	p.entry = make(bridge.Entries)
+	p.label = make(bridge.Labels)
+	p.selects = make(bridge.Selects)
 
 	for _, key := range entryKeys {
 		p.entry[key] = midget.NewEntry()
@@ -232,12 +146,12 @@ func newProductView(b *backend.Backend) *productView {
 		lang.L("Weight"),
 	}
 	for i, key := range labelKeys {
-		p.label[key] = widget.NewLabel(labelStrings[i])
+		p.label[key] = ttw.NewLabel(labelStrings[i])
 	}
 
 	selectOptions := [][]string{manufacturers, categories, lengthUnits, volumeUnits, weightUnits}
 	for i, key := range selectKeys {
-		p.selects[key] = widget.NewSelect(selectOptions[i], func(s string) {})
+		p.selects[key] = ttw.NewSelect(selectOptions[i], func(s string) {})
 	}
 
 	p.entry["Desc"].MultiLine = true
