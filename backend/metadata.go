@@ -249,7 +249,7 @@ func (m *Metadata) GetProductTree() error {
 					panic(err)
 				}
 				name, _ := ModelID.Name()
-				m.ProductTree.Append(MfrID.TString(), ModelID.TString(), name)
+				m.ProductTree.Append(MfrID.TString(), MfrID.TString()+ModelID.TString(), name)
 			}
 		}
 	}
