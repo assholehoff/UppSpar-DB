@@ -10,7 +10,6 @@ import (
 /* Note: "Model" should probably be called "Product" */
 type Model struct {
 	binding.DataItem
-	db           *sql.DB
 	ModelID      ModelID
 	Name         binding.String
 	MfrID        MfrID
@@ -42,9 +41,8 @@ type Model struct {
 	touched      bool
 }
 
-func newModel(b *Backend, id ModelID) *Model {
+func newModel(id ModelID) *Model {
 	mdl := &Model{
-		db:           b.db,
 		ModelID:      id,
 		Name:         binding.NewString(),
 		Manufacturer: binding.NewString(),
@@ -81,7 +79,7 @@ func newModel(b *Backend, id ModelID) *Model {
 	query := `SELECT Name, Manufacturer, MfrID, Desc, ImgURL1, ImgURL2, ImgURL3, ImgURL4, ImgURL5, SpecsURL, ModelURL, 
 Width, Height, Depth, Volume, Weight, LengthUnitID, VolumeUnitID, WeightUnitID, CatID
 FROM Model WHERE ModelID = @0`
-	err := be.db.QueryRow(query, mdl.ModelID).Scan(
+	err := b.db.QueryRow(query, mdl.ModelID).Scan(
 		&Name, &Manufacturer, &MfrID, &Desc, &ImgURL1, &ImgURL2, &ImgURL3, &ImgURL4, &ImgURL5, &SpecsURL, &ModelURL,
 		&Width, &Height, &Depth, &Volume, &Weight, &LengthUnitID, &VolumeUnitID, &WeightUnitID, &CatID,
 	)

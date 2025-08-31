@@ -77,7 +77,7 @@ func (m *Items) ExportExcel(p string) {
 	/* Fetch ItemIds for all items set to be exported */
 	var ids []ItemID
 	query := `SELECT ItemID FROM Item WHERE ItemStatusID = 1`
-	rows, err := m.db.Query(query)
+	rows, err := b.db.Query(query)
 	if err != nil {
 		log.Printf("Items.ExportExcel(%s) error: %s", p, err)
 	}

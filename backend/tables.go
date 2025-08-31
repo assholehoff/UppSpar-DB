@@ -8,10 +8,10 @@ import (
 // TODO validation and repair functions
 
 /* Table initialisation, validation and repair */
-func (b *Backend) listTables() []string {
+func (backend *Backend) listTables() []string {
 	var name string
 	var tables []string
-	stmt, err := b.db.Prepare(`SELECT name FROM sqlite_master WHERE type='table'`)
+	stmt, err := backend.db.Prepare(`SELECT name FROM sqlite_master WHERE type='table'`)
 	if err != nil {
 		log.Println("listTables() panic!")
 		panic(err)
@@ -29,23 +29,23 @@ func (b *Backend) listTables() []string {
 	}
 	return tables
 }
-func (b *Backend) createTables() {
-	j := b.Journal
-	tables := b.listTables()
+func (backend *Backend) createTables() {
+	j := backend.Journal
+	tables := backend.listTables()
 	touched := false
 	if !slices.Contains(tables, "Config") {
 		log.Printf("!slices.Contains(tables \"Config\")")
-		b.db.Exec(`CREATE TABLE Config(
+		backend.db.Exec(`CREATE TABLE Config(
 ConfigKey TEXT PRIMARY KEY,
 ConfigVal TEXT)`)
-		b.db.Exec(`INSERT INTO Config (ConfigKey, ConfigVal)
+		backend.db.Exec(`INSERT INTO Config (ConfigKey, ConfigVal)
 VALUES ("ItemIDWidth", "7")`)
 		touched = true
 	}
 
 	if !slices.Contains(tables, "Item") {
 		log.Printf("!slices.Contains(tables \"Item\")")
-		b.db.Exec(`CREATE TABLE Item(
+		backend.db.Exec(`CREATE TABLE Item(
 -- Proceedo defined column names --
 ItemID                  INTEGER PRIMARY KEY AUTOINCREMENT, 
 Name                    TEXT DEFAULT 'Nytt föremål', 
@@ -124,7 +124,7 @@ FOREIGN KEY(CatID) REFERENCES Category(CatID),
 FOREIGN KEY(GroupID) REFERENCES Item_Group(GroupID), 
 FOREIGN KEY(ItemStatusID) REFERENCES ItemStatus(ItemStatusID),  
 FOREIGN KEY(StorageID) REFERENCES Storage(StorageID))`)
-		b.db.Exec(`CREATE TRIGGER UpdateDateModified
+		backend.db.Exec(`CREATE TRIGGER UpdateDateModified
 AFTER UPDATE ON Item FOR EACH ROW
 BEGIN
 UPDATE Item SET DateModified = datetime('now', 'subsec') WHERE ItemID = old.ItemID;
@@ -133,7 +133,7 @@ END`)
 	}
 	if !slices.Contains(tables, "Temp_Item") {
 		log.Printf("!slices.Contains(tables \"Temp_Item\")")
-		b.db.Exec(`CREATE TABLE Temp_Item(
+		backend.db.Exec(`CREATE TABLE Temp_Item(
 -- Proceedo defined column names --
 ItemID                  INT, 
 Name                    TEXT, 
@@ -212,7 +212,7 @@ FOREIGN KEY(CatID) REFERENCES Category(CatID),
 FOREIGN KEY(GroupID) REFERENCES Item_Group(GroupID), 
 FOREIGN KEY(ItemStatusID) REFERENCES ItemStatus(ItemStatusID),  
 FOREIGN KEY(StorageID) REFERENCES Storage(StorageID))`)
-		b.db.Exec(`CREATE TRIGGER Temp_UpdateDateModified
+		backend.db.Exec(`CREATE TRIGGER Temp_UpdateDateModified
 AFTER UPDATE ON Temp_Item FOR EACH ROW
 BEGIN
 UPDATE Temp_Item SET DateModified = datetime('now', 'subsec') WHERE ItemID = old.ItemID;
@@ -222,7 +222,7 @@ END`)
 
 	if !slices.Contains(tables, "Item_Condition") {
 		log.Printf("!slices.Contains(tables \"Item_Condition\")")
-		b.db.Exec(`CREATE TABLE Item_Condition(
+		backend.db.Exec(`CREATE TABLE Item_Condition(
 ItemID INT, 
 Rate INT, 
 Comment TEXT, 
@@ -231,7 +231,7 @@ FOREIGN KEY(ItemID) REFERENCES Item(ItemID) ON DELETE CASCADE)`)
 	}
 	if !slices.Contains(tables, "Item_Group") {
 		log.Printf("!slices.Contains(tables \"Item_Group\")")
-		b.db.Exec(`CREATE TABLE Item_Group(
+		backend.db.Exec(`CREATE TABLE Item_Group(
 GroupID INTEGER PRIMARY KEY AUTOINCREMENT,
 ParentID INT DEFAULT 0,
 Name TEXT DEFAULT '',
@@ -240,7 +240,7 @@ Deleted BOOL DEFAULT false)`)
 	}
 	if !slices.Contains(tables, "Item_Function") {
 		log.Printf("!slices.Contains(tables \"Item_Function\")")
-		b.db.Exec(`CREATE TABLE Item_Function(
+		backend.db.Exec(`CREATE TABLE Item_Function(
 ItemID INT, 
 FuncID INT, 
 IsTested BOOL, 
@@ -252,33 +252,33 @@ FOREIGN KEY(FuncID) REFERENCES Function_Data(FuncID))`)
 	}
 	if !slices.Contains(tables, "Function_Data") {
 		log.Printf("!slices.Contains(tables \"Function_Data\")")
-		b.db.Exec(`CREATE TABLE Function_Data(
+		backend.db.Exec(`CREATE TABLE Function_Data(
 FuncID INTEGER PRIMARY KEY AUTOINCREMENT, 
 Name TEXT)`)
 		touched = true
 	}
 	if !slices.Contains(tables, "ItemStatus") {
 		log.Printf("!slices.Contains(tables \"ItemStatus\")")
-		b.db.Exec(`CREATE TABLE ItemStatus(
+		backend.db.Exec(`CREATE TABLE ItemStatus(
 ItemStatusID INTEGER PRIMARY KEY AUTOINCREMENT, 
 Name TEXT)`)
-		b.db.Exec(`INSERT INTO ItemStatus (Name) 
+		backend.db.Exec(`INSERT INTO ItemStatus (Name) 
 VALUES ("available"), ("sold"), ("archived"), ("deleted")`)
 		touched = true
 	}
 	if !slices.Contains(tables, "Manufacturer") {
 		log.Printf("!slices.Contains(tables \"Manufacturer\")")
-		b.db.Exec(`CREATE TABLE Manufacturer(
+		backend.db.Exec(`CREATE TABLE Manufacturer(
 MfrID INTEGER PRIMARY KEY AUTOINCREMENT, 
 Name TEXT DEFAULT 'Ny tillverkare',
 Deleted BOOL DEFAULT false)`)
-		b.db.Exec(`INSERT INTO Manufacturer (Name) 
+		backend.db.Exec(`INSERT INTO Manufacturer (Name) 
 VALUES ("UppSpar"), ("IKEA"), ("Kinnarps")`)
 		touched = true
 	}
 	if !slices.Contains(tables, "Model") {
 		log.Printf("!slices.Contains(tables \"Model\")")
-		b.db.Exec(`CREATE TABLE Model(
+		backend.db.Exec(`CREATE TABLE Model(
 ModelID      INTEGER PRIMARY KEY AUTOINCREMENT, 
 Name         TEXT DEFAULT 'Ny modell', 
 Manufacturer TEXT DEFAULT '',
@@ -311,12 +311,12 @@ FOREIGN KEY(CatID) REFERENCES Category(CatID))`)
 
 	if !slices.Contains(tables, "Category") {
 		log.Printf("!slices.Contains(tables \"Category\")")
-		b.createCategoryTable()
+		backend.createCategoryTable()
 		touched = true
 	}
 	if !slices.Contains(tables, "Category_Config") {
 		log.Printf("!slices.Contains(tables \"Category_Config\")")
-		b.db.Exec(`CREATE TABLE Category_Config(
+		backend.db.Exec(`CREATE TABLE Category_Config(
 CatID INT, 
 ConfigKey TEXT, 
 ConfigVal BOOL, 
@@ -325,7 +325,7 @@ FOREIGN KEY(CatID) REFERENCES Category(CatID) ON DELETE CASCADE)`)
 	}
 	if !slices.Contains(tables, "Category_Data") {
 		log.Printf("!slices.Contains(tables \"Category_Data\")")
-		b.db.Exec(`CREATE TABLE Category_Data(
+		backend.db.Exec(`CREATE TABLE Category_Data(
 CatID INT, 
 DataKey TEXT, 
 DataVal TEXT, 
@@ -334,7 +334,7 @@ FOREIGN KEY(CatID) REFERENCES Category(CatID) ON DELETE CASCADE)`)
 	}
 
 	if !slices.Contains(tables, "Image") {
-		b.db.Exec(`CREATE TABLE Image(
+		backend.db.Exec(`CREATE TABLE Image(
 ImgID INTEGER PRIMARY KEY AUTOINCREMENT, 
 ImgData BLOB, 
 ImgThumb BLOB, 
@@ -345,13 +345,13 @@ Deleted BOOL DEFAULT false),`)
 
 	if !slices.Contains(tables, "Metric") {
 		log.Printf("!slices.Contains(tables \"Metric\")")
-		b.createMetricTable()
+		backend.createMetricTable()
 		touched = true
 	}
 
 	if !slices.Contains(tables, "SearchWords_Association") {
 		log.Printf("!slices.Contains(tables \"SearchWords_Association\")")
-		b.db.Exec(`CREATE TABLE SearchWords_Association(
+		backend.db.Exec(`CREATE TABLE SearchWords_Association(
 ItemID INT, 
 WordID INT, 
 FOREIGN KEY(ItemID) REFERENCES SearchWords_Vocabulary(WordID) ON DELETE CASCADE, 
@@ -360,7 +360,7 @@ FOREIGN KEY(WordID) REFERENCES Item(ItemID))`)
 	}
 	if !slices.Contains(tables, "SearchWords_Vocabulary") {
 		log.Printf("!slices.Contains(tables \"SearchWords_Vocabulary\")")
-		b.db.Exec(`CREATE TABLE SearchWords_Vocabulary(
+		backend.db.Exec(`CREATE TABLE SearchWords_Vocabulary(
 WordID INTEGER PRIMARY KEY, 
 WordString TEXT)`)
 		touched = true
@@ -368,7 +368,7 @@ WordString TEXT)`)
 
 	if !slices.Contains(tables, "Storage") {
 		log.Printf("!slices.Contains(tables \"Storage\")")
-		b.db.Exec(`CREATE TABLE Storage(
+		backend.db.Exec(`CREATE TABLE Storage(
 StorageID INTEGER PRIMARY KEY, 
 Place TEXT, 
 Comment TEXT)`)
@@ -377,7 +377,7 @@ Comment TEXT)`)
 
 	if !slices.Contains(tables, "WishList") {
 		log.Printf("!slices.Contains(tables \"WishList\")")
-		b.db.Exec(`CREATE TABLE WishList(
+		backend.db.Exec(`CREATE TABLE WishList(
 WishID INTEGER PRIMARY KEY, 
 ContactID TEXT, 
 WishItemID TEXT, 
@@ -391,7 +391,7 @@ FOREIGN KEY(WishItemID) REFERENCES WishList_Item(WishItemID))`)
 	}
 	if !slices.Contains(tables, "WishList_Contact") {
 		log.Printf("!slices.Contains(tables \"WishList_Contact\")")
-		b.db.Exec(`CREATE TABLE WishList_Contact(
+		backend.db.Exec(`CREATE TABLE WishList_Contact(
 ContactID INTEGER PRIMARY KEY, 
 FirstName TEXT DEFAULT 'Förnamn', 
 LastName TEXT DEFAULT 'Efternamn', 
@@ -405,7 +405,7 @@ DateExpires TEXT)`)
 	}
 	if !slices.Contains(tables, "WishList_Item") {
 		log.Printf("!slices.Contains(tables \"WishList_Item\")")
-		b.db.Exec(`CREATE TABLE WishList_Item(
+		backend.db.Exec(`CREATE TABLE WishList_Item(
 WishItemID INTEGER PRIMARY KEY AUTOINCREMENT, 
 Name TEXT DEFAULT 'Nytt föremål', 
 Comment TEXT, 
@@ -426,7 +426,7 @@ FOREIGN KEY(CatID) REFERENCES Category(CatID))`)
 	}
 	if !slices.Contains(tables, "WishList_Item_Function") {
 		log.Printf("!slices.Contains(tables \"WishList_Item_Function\")")
-		b.db.Exec(`CREATE TABLE WishList_Item_Function(
+		backend.db.Exec(`CREATE TABLE WishList_Item_Function(
 WishItemID INT, 
 FuncID INT, 
 Comment TEXT, 
@@ -442,12 +442,12 @@ FOREIGN KEY(FuncID) REFERENCES Function_Data(FuncID))`)
 	}
 }
 
-func (b *Backend) createCategoryTable() {
-	b.db.Exec(`CREATE TABLE Category(
+func (backend *Backend) createCategoryTable() {
+	backend.db.Exec(`CREATE TABLE Category(
 CatID INTEGER PRIMARY KEY AUTOINCREMENT, 
 ParentID INT DEFAULT 0,
 Name TEXT DEFAULT 'Ny kategori')`)
-	b.db.Exec(`INSERT INTO Category (Name, ParentID) 
+	backend.db.Exec(`INSERT INTO Category (Name, ParentID) 
 VALUES  ("Administration", 0), 
         ("Hushåll", 0), 
         ("Kontor", 0), 
@@ -471,9 +471,9 @@ VALUES  ("Administration", 0),
         ("Sängar & madrasser", 2)`)
 }
 
-func (b *Backend) createMetricTable() {
-	b.db.Exec(`CREATE TABLE Metric(
+func (backend *Backend) createMetricTable() {
+	backend.db.Exec(`CREATE TABLE Metric(
 UnitID INTEGER PRIMARY KEY, 
 Text TEXT)`)
-	b.db.Exec(`INSERT INTO Metric (Text) VALUES ("mm"), ("cm"), ("dm"), ("m"), ("g"), ("hg"), ("kg"), ("ml"), ("cl"), ("dl"), ("l")`)
+	backend.db.Exec(`INSERT INTO Metric (Text) VALUES ("mm"), ("cm"), ("dm"), ("m"), ("g"), ("hg"), ("kg"), ("ml"), ("cl"), ("dl"), ("l")`)
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -14,7 +15,6 @@ import (
 )
 
 type Metadata struct {
-	b            *Backend
 	categoryData map[CatID]*Category
 	mfrData      map[MfrID]*Manufacturer
 	modelData    map[ModelID]*Model
@@ -28,15 +28,14 @@ type Metadata struct {
 	MfrIDList   binding.UntypedList
 	MfrNameList binding.StringList
 	ModelIDList binding.UntypedList
-	ProductTree binding.StringTree
+	ProductTree binding.UntypedTree
 
 	UnitIDList       binding.UntypedList
 	ItemStatusIDList binding.UntypedList
 }
 
-func NewMetadata(b *Backend) *Metadata {
+func NewMetadata() *Metadata {
 	return &Metadata{
-		b:             b,
 		categoryData:  make(map[CatID]*Category),
 		mfrData:       make(map[MfrID]*Manufacturer),
 		modelData:     make(map[ModelID]*Model),
@@ -49,7 +48,7 @@ func NewMetadata(b *Backend) *Metadata {
 		MfrIDList:        binding.NewUntypedList(),
 		MfrNameList:      binding.NewStringList(),
 		ModelIDList:      binding.NewUntypedList(),
-		ProductTree:      binding.NewStringTree(),
+		ProductTree:      binding.NewUntypedTree(),
 		UnitIDList:       binding.NewUntypedList(),
 		ItemStatusIDList: binding.NewUntypedList(),
 	}
@@ -57,7 +56,7 @@ func NewMetadata(b *Backend) *Metadata {
 
 func (m *Metadata) CreateNewCategory() (id CatID, err error) {
 	query := `INSERT INTO Category DEFAULT VALUES`
-	res, err := m.b.db.Exec(query)
+	res, err := b.db.Exec(query)
 	if err != nil {
 		err = fmt.Errorf("Metadata.CreateNewCategory() error: %w", err)
 		return
@@ -73,7 +72,7 @@ func (m *Metadata) CreateNewCategory() (id CatID, err error) {
 }
 func (m *Metadata) CreateNewManufacturer() (id MfrID, err error) {
 	query := `INSERT INTO Manufacturer DEFAULT VALUES`
-	res, err := m.b.db.Exec(query)
+	res, err := b.db.Exec(query)
 	if err != nil {
 		err = fmt.Errorf("Metadata.CreateNewManufacturer() error: %w", err)
 		return
@@ -100,15 +99,15 @@ func (m *Metadata) CreateNewProduct() (id ModelID, err error) {
 		num, _ := strconv.Atoi(sel)
 		mid, _ := ModelID(num).MfrID()
 		query := `INSERT INTO Model (Name, MfrID) VALUES ('Ny produkt', @0)`
-		res, err = m.b.db.Exec(query, mid)
+		res, err = b.db.Exec(query, mid)
 	} else if strings.HasPrefix(sel, "MFR-") {
 		sel = strings.TrimPrefix(sel, "MFR-")
 		num, _ := strconv.Atoi(sel)
 		query := `INSERT INTO Model (Name, MfrID) VALUES ('Ny produkt', @0)`
-		res, err = m.b.db.Exec(query, MfrID(num))
+		res, err = b.db.Exec(query, MfrID(num))
 	} else {
 		query := `INSERT INTO Model DEFAULT VALUES`
-		res, err = m.b.db.Exec(query)
+		res, err = b.db.Exec(query)
 	}
 	if err != nil {
 		err = fmt.Errorf("Metadata.CreateNewModel() error: %w", err)
@@ -133,7 +132,7 @@ func (m *Metadata) CopyCategory() error {
 	}
 	selectedCatID := sid.(CatID)
 	query := `INSERT INTO Category (PrentID, Name) SELECT ParentID, Name FROM Category WHERE CatID = @0`
-	stmt, err := m.b.db.Prepare(query)
+	stmt, err := b.db.Prepare(query)
 	if err != nil {
 		return fmt.Errorf("Metadata.CopyCategory() error: %w", err)
 	}
@@ -157,7 +156,7 @@ func (m *Metadata) DeleteCategory() error {
 	}
 	selectedCatID := sid.(CatID)
 	query := `DELETE FROM Category WHERE CatID = @0`
-	stmt, err := m.b.db.Prepare(query)
+	stmt, err := b.db.Prepare(query)
 	if err != nil {
 		return fmt.Errorf("Metadata.DeleteCategory() error: %w", err)
 	}
@@ -201,12 +200,19 @@ func (m *Metadata) GetListItemIDFor(s string) widget.ListItemID {
 	})
 	return index
 }
-func (m *Metadata) GetProductIDFor(index widget.TreeNodeID) string {
-	id, err := m.ProductTree.GetValue(index)
+func (m *Metadata) GetProductIDFor(index widget.TreeNodeID) (id NumID, isMfr bool) {
+	s, err := m.ProductTree.GetValue(index)
 	if err != nil {
 		log.Printf("Metadata.GetProductIDFor(%s) error: %s", index, err)
 	}
-	return id
+	r := regexp.MustCompile(`MDL-\d+$`)
+	if t := r.FindString(index); t != "" {
+		id = s.(ModelID)
+	} else {
+		id = s.(MfrID)
+		isMfr = true
+	}
+	return id, isMfr
 }
 func (m *Metadata) GetCatIDForTreeItem(index widget.TreeNodeID) CatID {
 	id, err := m.CatIDTree.GetValue(index)
@@ -245,25 +251,24 @@ func (m *Metadata) GetProductTree() error {
 	// TODO break this thing up
 	// TODO also write an *excluding* function (get all except this one)
 	query := `SELECT MfrID FROM Manufacturer ORDER BY Name ASC`
-	rows, err := m.b.db.Query(query)
+	rows, err := b.db.Query(query)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			panic(err)
 		}
 	}
 	defer rows.Close()
-	m.ProductTree.Set(make(map[string][]string), make(map[string]string))
+	m.ProductTree.Set(make(map[string][]string), make(map[string]any))
 	for rows.Next() {
 		var MfrID MfrID
 		err := rows.Scan(&MfrID)
 		if err != nil {
 			panic(err)
 		}
-		name, _ := MfrID.Name()
-		m.ProductTree.Append("", MfrID.TString(), name)
+		m.ProductTree.Append("", MfrID.TString(), MfrID)
 		if MfrID.Branch() {
 			query := `SELECT ModelID FROM Model WHERE MfrID = @0 ORDER BY Name ASC`
-			rows, err := m.b.db.Query(query, MfrID)
+			rows, err := b.db.Query(query, MfrID)
 			if err != nil {
 				if !errors.Is(err, sql.ErrNoRows) {
 					panic(err)
@@ -276,14 +281,13 @@ func (m *Metadata) GetProductTree() error {
 				if err != nil {
 					panic(err)
 				}
-				name, _ := ModelID.Name()
-				m.ProductTree.Append(MfrID.TString(), MfrID.TString()+ModelID.TString(), name)
+				m.ProductTree.Append(MfrID.TString(), MfrID.TString()+ModelID.TString(), ModelID)
 			}
 		}
 	}
 	rows.Close()
 	query = `SELECT ModelID FROM Model WHERE MfrID = 0 ORDER BY NAME ASC`
-	rows, err = m.b.db.Query(query)
+	rows, err = b.db.Query(query)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		panic(err)
 	}
@@ -293,38 +297,11 @@ func (m *Metadata) GetProductTree() error {
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			panic(err)
 		}
-		name, _ := ModelID.Name()
-		m.ProductTree.Append("", ModelID.TString(), name)
+		m.ProductTree.Append("", ModelID.TString(), ModelID)
 	}
 	return nil
 }
 
-func (m *Metadata) findCatIDFor(s string) (CatID, error) {
-	var i NullInt
-	var id CatID
-
-	query := `SELECT CatID FROM Category WHERE Name = @0`
-	stmt, err := m.b.db.Prepare(query)
-	if err != nil {
-		return id, fmt.Errorf("findCatIDFor error: %w", err)
-	}
-	defer stmt.Close()
-	err = stmt.QueryRow(s).Scan(&i)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return id, fmt.Errorf("findCatIDFor error: %w", err)
-	}
-	if errors.Is(err, sql.ErrNoRows) {
-		return id, err
-	}
-
-	if !i.Valid {
-		log.Printf("findCatIDFor(%s); i.Valid: %t, i.Int: %v", s, i.Valid, i.Int)
-		return id, err
-	}
-
-	id = CatID(i.Int)
-	return id, nil
-}
 func (m *Metadata) appendCatIDAndChildren(id CatID, spc string) {
 	n, _ := id.Name()
 	m.CatIDList.Append(id)
@@ -339,7 +316,7 @@ func (m *Metadata) appendCatIDAndChildren(id CatID, spc string) {
 }
 func (m *Metadata) getCatIDList() error {
 	query := `SELECT CatID FROM Category WHERE ParentID = 0 ORDER BY Name ASC`
-	rows, err := m.b.db.Query(query)
+	rows, err := b.db.Query(query)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
@@ -359,7 +336,7 @@ func (m *Metadata) getCatIDList() error {
 }
 func (m *Metadata) GetCatIDTree() error {
 	query := `SELECT CatID, ParentID FROM Category ORDER BY Name`
-	rows, err := m.b.db.Query(query)
+	rows, err := b.db.Query(query)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -378,7 +355,7 @@ func (m *Metadata) GetCatIDTree() error {
 }
 func (m *Metadata) GetMfrIDs() {
 	query := `SELECT MfrID FROM Manufacturer ORDER BY Name ASC`
-	rows, err := m.b.db.Query(query)
+	rows, err := b.db.Query(query)
 	if err != nil {
 		log.Println(err)
 		return
@@ -395,7 +372,7 @@ func (m *Metadata) GetMfrIDs() {
 }
 func (m *Metadata) GetModelIDs() {
 	query := `SELECT ModelID FROM Model`
-	rows, err := m.b.db.Query(query)
+	rows, err := b.db.Query(query)
 	if err != nil {
 		log.Println(err)
 		return
@@ -409,7 +386,7 @@ func (m *Metadata) GetModelIDs() {
 }
 func (m *Metadata) getAllUnitIDs() {
 	query := `SELECT UnitID FROM Metric`
-	rows, err := m.b.db.Query(query)
+	rows, err := b.db.Query(query)
 	if err != nil {
 		log.Println(err)
 		return
@@ -425,7 +402,7 @@ func (m *Metadata) getAllUnitIDs() {
 }
 func (m *Metadata) getAllItemStatusIDs() {
 	query := `SELECT ItemStatusID FROM ItemStatus`
-	stmt, err := m.b.db.Prepare(query)
+	stmt, err := b.db.Prepare(query)
 	if err != nil {
 		log.Printf("Metadata.getAllItemStatusIDs() error: %v", err)
 	}

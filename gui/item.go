@@ -179,13 +179,13 @@ func newItemView(a *App) *itemView {
 		}
 	}))
 	searchEntry := xwidget.NewCompletionEntry([]string{})
-	searchEntry.Bind(b.Items.SearchString)
+	searchEntry.Bind(b.Items.Search.Term)
 	searchEntry.OnChanged = func(s string) {
 		if len(s) < 3 {
 			searchEntry.HideCompletion()
 			return
 		}
-		results, err := b.Items.SearchResultUniqueCompletions.Get()
+		results, err := b.Items.Search.Completions.Get()
 		if err != nil {
 			panic(err)
 		}
@@ -198,16 +198,8 @@ func newItemView(a *App) *itemView {
 			lang.X("item.form.label.name", "item.form.label.name"),
 			lang.X("item.form.label.manufacturer", "item.form.label.manufacturer"),
 		}, func(s string) {
-			if s == b.Items.SearchKey().String() {
-				return
-			}
-			switch s {
-			case lang.X("item.form.label.name", "item.form.label.name"):
-				b.Items.SetSearchKey(backend.SearchKeyName)
-			case lang.X("item.form.label.manufacturer", "item.form.label.manufacturer"):
-				b.Items.SetSearchKey(backend.SearchKeyManufacturer)
-			}
-			b.Items.Search()
+			// TODO redo this to fit map[string]bool
+			// b.Items.GetItemIDs()
 		}),
 		widget.NewSelect([]string{
 			lang.X("form.select.search.beginswith", "form.select.search.beginswith"),
@@ -218,19 +210,17 @@ func newItemView(a *App) *itemView {
 		}, func(s string) {
 			switch s {
 			case lang.X("form.select.search.beginswith", "form.select.search.beginswith"):
-				b.Items.SetSearchConfig(backend.BeginsWith)
+				b.Items.Search.Match = backend.MatchBeginsWith
 			case lang.X("form.select.search.endswith", "form.select.search.endswith"):
-				b.Items.SetSearchConfig(backend.EndsWith)
+				b.Items.Search.Match = backend.MatchEndsWith
 			case lang.X("form.select.search.equals", "form.select.search.equals"):
-				b.Items.SetSearchConfig(backend.Equals)
+				b.Items.Search.Match = backend.MatchEquals
 			case lang.X("form.select.search.contains", "form.select.search.contains"):
-				b.Items.SetSearchConfig(backend.Contains)
-			// case lang.X("form.select.search.regexp", "form.select.search.regexp"):
-			// 	b.Items.SetSearchConfig(backend.RegExp)
+				b.Items.Search.Match = backend.MatchContains
 			default:
-				b.Items.SetSearchConfig(backend.Contains)
+				b.Items.Search.Match = backend.MatchContains
 			}
-			b.Items.Search()
+			b.Items.GetItemIDs()
 		}),
 	)
 	toolbarRight := container.NewGridWithRows(1,
@@ -248,30 +238,39 @@ func newItemView(a *App) *itemView {
 		}, func(s string) {
 			switch s {
 			case lang.X("form.select.sortby.itemid", "form.select.sortby.itemid"):
-				b.Items.SetSortKey(backend.SearchKeyItemID)
+				b.Items.Search.SortBy = backend.SearchKeyItemID
 			case lang.X("form.select.sortby.name", "form.select.sortby.name"):
-				b.Items.SetSortKey(backend.SearchKeyName)
+				b.Items.Search.SortBy = backend.SearchKeyName
 			case lang.X("form.select.sortby.manufacturer", "form.select.sortby.manufacturer"):
-				b.Items.SetSortKey(backend.SearchKeyManufacturer)
+				b.Items.Search.SortBy = backend.SearchKeyManufacturer
 			case lang.X("form.select.sortby.datecreated", "form.select.sortby.datecreated"):
-				b.Items.SetSortKey(backend.SearchKeyDateCreated)
+				b.Items.Search.SortBy = backend.SearchKeyDateCreated
 			case lang.X("form.select.sortby.datemodified", "form.select.sortby.datemodified"):
-				b.Items.SetSortKey(backend.SearchKeyDateModified)
+				b.Items.Search.SortBy = backend.SearchKeyDateModified
 			}
-			b.Items.Search()
+			b.Items.GetItemIDs()
 		}),
 		widget.NewSelect([]string{
 			lang.X("form.select.sortorder.ascending", "form.select.sortorder.ascending"),
 			lang.X("form.select.sortorder.descending", "form.select.sortorder.descending"),
 		}, func(s string) {
 			if s == lang.X("form.select.sortorder.ascending", "form.select.sortorder.ascending") {
-				b.Items.SetSortOrder(backend.SortAscending)
+				b.Items.Search.Order = backend.SortAscending
 			} else {
-				b.Items.SetSortOrder(backend.SortDescending)
+				b.Items.Search.Order = backend.SortDescending
 			}
-			b.Items.Search()
+			b.Items.GetItemIDs()
 		}))
-	iv.toolbar = container.NewBorder(nil, nil, toolbarLeft, toolbarRight, searchEntry)
+	filterWidth := container.NewBorder(nil, nil, widget.NewLabel(lang.L("Width")), nil, widget.NewEntryWithData(a.backend.Items.Filter.Width))
+	filterHeight := container.NewBorder(nil, nil, widget.NewLabel(lang.L("Height")), nil, widget.NewEntryWithData(a.backend.Items.Filter.Height))
+	filterDepth := container.NewBorder(nil, nil, widget.NewLabel(lang.L("Depth")), nil, widget.NewEntryWithData(a.backend.Items.Filter.Depth))
+	filterVolume := container.NewBorder(nil, nil, widget.NewLabel(lang.L("Volume")), nil, widget.NewEntryWithData(a.backend.Items.Filter.Volume))
+	filterWeight := container.NewBorder(nil, nil, widget.NewLabel(lang.L("Weight")), nil, widget.NewEntryWithData(a.backend.Items.Filter.Weight))
+	filterBar := container.NewGridWithRows(1,
+		filterWidth, filterHeight, filterDepth, filterVolume, filterWeight,
+	)
+	searchBar := container.NewBorder(nil, nil, toolbarLeft, toolbarRight, searchEntry)
+	iv.toolbar = container.NewBorder(searchBar, filterBar, nil, nil)
 	toolbarLeft.Objects[1].(*widget.Select).SetSelectedIndex(0)  // search key
 	toolbarLeft.Objects[2].(*widget.Select).SetSelectedIndex(2)  // search type
 	toolbarRight.Objects[1].(*widget.Select).SetSelectedIndex(0) // sort by

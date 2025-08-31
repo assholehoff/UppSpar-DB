@@ -87,11 +87,28 @@ func (id MfrID) TString() string {
 func (id MfrID) Branch() bool {
 	var MfrID MfrID
 	query := `SELECT Manufacturer.MfrID FROM Manufacturer LEFT JOIN Model WHERE Model.MfrID = @0 LIMIT 1`
-	err := be.db.QueryRow(query, id).Scan(&MfrID)
+	err := b.db.QueryRow(query, id).Scan(&MfrID)
 	return !errors.Is(err, sql.ErrNoRows)
 }
 func (id MfrID) TypeName() string {
 	return "MfrID"
+}
+func (id MfrID) Children() (children []ModelID) {
+	query := `SELECT ModelID FROM Model WHERE MfrID = @0 ORDER BY Name ASC`
+	rows, err := b.db.Query(query, id)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		panic(err)
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var child ModelID
+		rows.Scan(&child)
+		children = append(children, child)
+	}
+	return
 }
 
 /* Returns Name from SQL query */
@@ -109,13 +126,13 @@ func (id MfrID) SetName() error {
 }
 
 func (id MfrID) Manufacturer() *Manufacturer {
-	return getManufacturer(be, id)
+	return getManufacturer(id)
 }
 
 /* Get the pointer to Manufacturer from map or make one and return it */
-func getManufacturer(b *Backend, id MfrID) *Manufacturer {
+func getManufacturer(id MfrID) *Manufacturer {
 	if mfr := b.Metadata.mfrData[id]; mfr == nil {
-		mfr = newMfr(b, id)
+		mfr = newMfr(id)
 		b.Metadata.mfrData[id] = mfr
 	}
 	return b.Metadata.mfrData[id]

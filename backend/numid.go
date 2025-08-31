@@ -31,7 +31,7 @@ type NumID interface {
 /* Get value 'val' for column 'key' for row 'id' from table 't' */
 func getValue[T sql.NullBool | sql.NullFloat64 | NullInt | sql.NullInt64 | sql.NullString](t string, id NumID, key string) (val T, err error) {
 	query := `SELECT ` + key + ` FROM ` + t + ` WHERE ` + id.TypeName() + ` = @0`
-	stmt, err := be.db.Prepare(query)
+	stmt, err := b.db.Prepare(query)
 	if err != nil {
 		log.Println(strings.Replace(query, "@0", id.String(), 1))
 		log.Printf("getValue[%s](%s, %d, %v) panic!", id.TypeName(), t, id, key)
@@ -54,7 +54,7 @@ func getValue[T sql.NullBool | sql.NullFloat64 | NullInt | sql.NullInt64 | sql.N
 func setValue[T bool | float64 | int | string](t string, id NumID, key string, val T) (err error) {
 	query := `UPDATE ` + t + ` SET ` + key + ` = @1 WHERE ` + id.TypeName() + ` = @2 AND ` + key + ` <> @3`
 	// log.Printf("UPDATE %s SET %s = %v WHERE %s = %d AND %s <> %v", t, key, val, id.TypeName(), id, key, val)
-	stmt, err := be.db.Prepare(query)
+	stmt, err := b.db.Prepare(query)
 	if err != nil {
 		log.Printf("setItemIDValue(%d, %s, %v) panic!", id, key, val)
 		panic(err)

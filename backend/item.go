@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,13 +20,13 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type SearchType int
+type SearchTermMatch int
 
 const (
-	BeginsWith SearchType = iota
-	EndsWith
-	Contains
-	Equals
+	MatchBeginsWith SearchTermMatch = iota
+	MatchEndsWith
+	MatchContains
+	MatchEquals
 	RegExp
 )
 
@@ -33,7 +34,7 @@ type SearchKey int
 
 const (
 	SearchKeyName SearchKey = iota
-	SearchKeyDescr
+	SearchKeyDesc
 	SearchKeyManufacturer
 	SearchKeyModel
 	SearchKeyItemID
@@ -47,7 +48,7 @@ func (k SearchKey) String() string {
 		return "ItemID"
 	case SearchKeyName:
 		return "Name"
-	case SearchKeyDescr:
+	case SearchKeyDesc:
 		return "Descr"
 	case SearchKeyManufacturer:
 		return "Manufacturer"
@@ -170,775 +171,60 @@ const (
 	ItemStatusDeleted
 )
 
-/* Item and Bindings */
-
-type ItemID int
-
-var (
-	_ sql.Scanner   = (*ItemID)(nil)
-	_ driver.Valuer = (*ItemID)(nil)
-	_ fmt.Stringer  = (*ItemID)(nil)
-	_ NumID         = (ItemID)(0)
-)
-
-func (id *ItemID) Scan(src any) error {
-	if !reflect.ValueOf(src).IsValid() {
-		*id = 0
-		return nil
-	}
-	switch reflect.TypeOf(src).Name() {
-	case "int":
-		*id = ItemID(src.(int))
-	case "int8":
-		*id = ItemID(src.(int8))
-	case "int16":
-		*id = ItemID(src.(int16))
-	case "int32":
-		*id = ItemID(src.(int32))
-	case "int64":
-		*id = ItemID(src.(int64))
-		if runtime.GOARCH == "386" || runtime.GOARCH == "arm" {
-			if src.(int64) > math.MaxInt32 {
-				*id = ItemID(math.MaxInt32)
-				return ErrLossyConversion
-			}
-		}
-	case "uint":
-		*id = ItemID(src.(uint))
-	case "uint8":
-		*id = ItemID(src.(uint8))
-	case "uint16":
-		*id = ItemID(src.(uint16))
-	case "uint32":
-		*id = ItemID(src.(uint32))
-	case "uint64":
-		*id = ItemID(src.(uint64))
-		if runtime.GOARCH == "386" || runtime.GOARCH == "arm" {
-			if src.(uint64) > math.MaxUint32 {
-				*id = ItemID(math.MaxUint32)
-				return ErrLossyConversion
-			}
-		}
-		if src.(uint64) > math.MaxInt64 {
-			*id = ItemID(math.MaxInt64)
-			return ErrLossyConversion
-		}
-	default:
-		log.Printf("ItemID(%d).Scan(%v) type error: %s", id, src, reflect.TypeOf(src).Name())
-		return ErrInvalidType
-	}
-	return nil
-}
-func (id ItemID) Value() (driver.Value, error) {
-	return int64(id), nil
-}
-func (id ItemID) String() string {
-	return fmt.Sprintf("%0*d", ItemIDWidth(), id)
-}
-
-/* Returns a tree-friendly identifying string */
-func (id ItemID) TString() string {
-	return fmt.Sprintf("ITEM-%d", id)
-}
-func (id ItemID) Int() int {
-	return int(id)
-}
-func (id ItemID) TypeName() string {
-	return "ItemID"
-}
-func (id ItemID) Item() *Item {
-	return getItem(be, id)
-}
-
-/* Returning data */
-
-func (id ItemID) Name() (string, error) {
-	return id.getString("Name")
-}
-func (id ItemID) CatID() (CatID, error) {
-	cid, err := id.getInt("CatID")
-	return CatID(cid), err
-}
-func (id ItemID) Category() (string, error) {
-	return id.Item().CatID.Name()
-}
-func (id ItemID) Price() (float64, error) {
-	return id.getFloat("Price")
-}
-func (id ItemID) Currency() (string, error) {
-	return id.getString("Currency")
-}
-func (id ItemID) Unit() (string, error) {
-	return id.getString("Unit")
-}
-func (id ItemID) Vat() (float64, error) {
-	return id.getFloat("Vat")
-}
-func (id ItemID) Priority() (bool, error) {
-	return id.getBool("Priority")
-}
-func (id ItemID) Stock() (float64, error) {
-	return id.getFloat("Stock")
-}
-func (id ItemID) ImgURL1() (string, error) {
-	return id.getString("ImgURL1")
-}
-func (id ItemID) ImgURL2() (string, error) {
-	return id.getString("ImgURL2")
-}
-func (id ItemID) ImgURL3() (string, error) {
-	return id.getString("ImgURL3")
-}
-func (id ItemID) ImgURL4() (string, error) {
-	return id.getString("ImgURL4")
-}
-func (id ItemID) ImgURL5() (string, error) {
-	return id.getString("ImgURL5")
-}
-func (id ItemID) SpecsURL() (string, error) {
-	return id.getString("SpecsURL")
-}
-func (id ItemID) AddDesc() (string, error) {
-	return id.getString("AddDesc")
-}
-func (id ItemID) LongDesc() (string, error) {
-	return id.getString("LongDesc")
-}
-func (id ItemID) MfrID() (MfrID, error) {
-	mid, err := id.getInt("MfrID")
-	return MfrID(mid), err
-}
-func (id ItemID) Manufacturer() (string, error) {
-	mid, err := id.MfrID()
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		panic(err)
-	}
-	return mid.Name()
-}
-func (id ItemID) ModelID() (ModelID, error) {
-	mid, err := id.getInt("ModelID")
-	return ModelID(mid), err
-}
-func (id ItemID) Model() (string, error) {
-	mid, err := id.ModelID()
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		panic(err)
-	}
-	return mid.Name()
-}
-func (id ItemID) ModelURL() (string, error) {
-	return id.getString("ModelURL")
-}
-func (id ItemID) Notes() (string, error) {
-	return id.getString("Notes")
-}
-func (id ItemID) Width() (float64, error) {
-	return id.getFloat("Width")
-}
-func (id ItemID) Height() (float64, error) {
-	return id.getFloat("Height")
-}
-func (id ItemID) Depth() (float64, error) {
-	return id.getFloat("Depth")
-}
-func (id ItemID) Volume() (float64, error) {
-	return id.getFloat("Volume")
-}
-func (id ItemID) Weight() (float64, error) {
-	return id.getFloat("Weight")
-}
-func (id ItemID) LengthUnit() (string, error) {
-	uid, err := id.getInt("LengthUnitID")
-	return UnitID(uid).String(), err
-}
-func (id ItemID) WeightUnit() (string, error) {
-	uid, err := id.getInt("WeightUnitID")
-	return UnitID(uid).String(), err
-}
-func (id ItemID) VolumeUnit() (string, error) {
-	uid, err := id.getInt("VolumeUnitID")
-	return UnitID(uid).String(), err
-}
-func (id ItemID) LengthUnitID() (UnitID, error) {
-	uid, err := id.getInt("LengthUnitID")
-	return UnitID(uid), err
-}
-func (id ItemID) VolumeUnitID() (UnitID, error) {
-	uid, err := id.getInt("VolumeUnitID")
-	return UnitID(uid), err
-}
-func (id ItemID) WeightUnitID() (UnitID, error) {
-	uid, err := id.getInt("WeightUnitID")
-	return UnitID(uid), err
-}
-func (id ItemID) ItemStatus() string {
-	stat, err := id.getInt("ItemStatusID")
-	if err != nil {
-		log.Printf("ItemID(%d).ItemStatus() error: %s", id, err)
-		return ""
-	}
-	return ItemStatusID(stat).LString()
-}
-func (id ItemID) ItemStatusID() (ItemStatusID, error) {
-	is, err := id.getInt("ItemStatusID")
-	return ItemStatusID(is), err
-}
-func (id ItemID) DateCreated() (t time.Time, err error) {
-	ts, err := id.getString("DateCreated")
-	utc, err := time.Parse(subsec, ts)
-	stockholm, err := time.LoadLocation("Europe/Stockholm")
-	t = utc.In(stockholm)
-	return
-}
-func (id ItemID) DateModified() (t time.Time, err error) {
-	ts, err := id.getString("DateModified")
-	utc, err := time.Parse(subsec, ts)
-	stockholm, err := time.LoadLocation("Europe/Stockholm")
-	t = utc.In(stockholm)
-	return
-}
-
-func (id ItemID) getBool(key string) (val bool, err error) {
-	b, err := getValue[sql.NullBool]("Item", id, key)
-	if b.Valid {
-		val = b.Bool
-	} else {
-		log.Printf("ItemID(%d).getBool(%s) error: %s", id, key, err)
-	}
-	return
-}
-func (id ItemID) getFloat(key string) (val float64, err error) {
-	f, err := getValue[sql.NullFloat64]("Item", id, key)
-	if f.Valid {
-		val = f.Float64
-	} else {
-		log.Printf("ItemID(%d).getFloat(%s) error: %s", id, key, err)
-	}
-	return
-}
-func (id ItemID) getInt(key string) (val int, err error) {
-	i, err := getValue[sql.NullInt64]("Item", id, key)
-	val = int(i.Int64)
-	if !i.Valid {
-		log.Printf("ItemID(%d).getInt(%s) error: %s", id, key, err)
-	}
-	return
-}
-func (id ItemID) getString(key string) (val string, err error) {
-	s, err := getValue[sql.NullString]("Item", id, key)
-	if s.Valid {
-		val = s.String
-	} else {
-		log.Printf("ItemID(%d).getInt(%s) error: %s", id, key, err)
-	}
-	return
-}
-
-/* Compiling data from multiple cells */
-
-func (id ItemID) CompileAddDesc() error {
-	var addDesc, u string
-	var w, h, d, v float64
-	w, _ = id.Width()
-	h, _ = id.Height()
-	d, _ = id.Depth()
-	u, _ = id.LengthUnit()
-	if w > 0 || h > 0 || d > 0 {
-		addDesc += fmt.Sprintf("Mått: %.0fx%.0fx%.0f %s\n", w, h, d, u)
-	}
-	v, _ = id.Volume()
-	u, _ = id.VolumeUnit()
-	if v > 0 {
-		addDesc += fmt.Sprintf("Volym: %.2f %s\n", v, u)
-	}
-	w, _ = id.Weight()
-	u, _ = id.WeightUnit()
-	if w > 0 {
-		addDesc += fmt.Sprintf("Vikt: %.2f %s\n", w, u)
-	}
-	n, _ := id.Notes()
-	if n != "" {
-		addDesc += fmt.Sprintf("Anmärkningar: %s\n", n)
-	}
-	id.Item().AddDesc.Set(addDesc)
-	return id.SetAddDesc()
-}
-
-func (id ItemID) CompileLongDesc() error {
-	var longDesc string
-	n := false
-	addStringToLine := func(s string, e error) {
-		if e != nil && !errors.Is(e, sql.ErrNoRows) {
-			log.Printf("ItemID(%d).CompileLongDesc().addStringToLine(%s) error: %s", id, s, e)
-		}
-		if s != "" {
-			longDesc += fmt.Sprintf("%s ", s)
-			n = true
-		}
-	}
-	addNewlines := func(i int) {
-		if n {
-			for range i {
-				longDesc += "\n"
-			}
-			n = false
-		}
-	}
-	/* Manufacturer and model */
-	addStringToLine(id.Manufacturer())
-	addStringToLine(id.Model())
-	addNewlines(1)
-	addStringToLine(id.Name())
-	addNewlines(2)
-	addStringToLine(id.Notes())
-
-	id.Item().LongDesc.Set(longDesc)
-	return id.SetLongDesc()
-}
-
-/* Updating data */
-
-func (id ItemID) SetName() error {
-	key := "Name"
-	val, err := id.Item().Name.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetName() error: %w", err)
-	}
-	return id.setString(key, val)
-}
-func (id ItemID) SetCatID(val CatID) error {
-	key := "CatID"
-	return id.setInt(key, int(val))
-}
-func (id ItemID) SetCategory() error {
-	s, err := id.Item().Category.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetCategory() error: %w", err)
-	}
-	s = strings.TrimSpace(s)
-	n, err := CatIDFor(s)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return fmt.Errorf("ItemID(%d).SetCategory(%s) error: %s", id, s, err)
-	}
-	if errors.Is(err, sql.ErrNoRows) {
-		return sql.ErrNoRows
-	}
-	id.Item().CatID = n
-	return id.SetCatID(n)
-}
-func (id ItemID) SetPrice() error {
-	key := "Price"
-	val, err := id.Item().priceFloat.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetPrice() error: %w", err)
-	}
-	return id.setFloat(key, val)
-}
-func (id ItemID) SetCurrency() error {
-	key := "Currency"
-	val, err := id.Item().Currency.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetCurrency() error: %w", err)
-	}
-	return id.setString(key, val)
-}
-func (id ItemID) SetUnit() error {
-	key := "Unit"
-	val, err := id.Item().Unit.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetUnit() error: %w", err)
-	}
-	return id.setString(key, val)
-}
-func (id ItemID) SetVat() error {
-	key := "Vat"
-	val, err := id.Item().vatFloat.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetVat() error: %w", err)
-	}
-	return id.setFloat(key, val)
-}
-func (id ItemID) SetPriority() error {
-	key := "Priority"
-	val, err := id.Item().Priority.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetPriority() error: %w", err)
-	}
-	return id.setBool(key, val)
-}
-func (id ItemID) SetStock() error {
-	key := "Vat"
-	val, err := id.Item().stockFloat.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetStock() error: %w", err)
-	}
-	return id.setFloat(key, val)
-}
-func (id ItemID) SetImgURL1() error {
-	key := "ImgURL1"
-	val, err := id.Item().ImgURL1.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetImgURL1() error: %w", err)
-	}
-	return id.setString(key, val)
-}
-func (id ItemID) SetImgURL2() error {
-	key := "ImgURL2"
-	val, err := id.Item().ImgURL2.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetImgURL2() error: %w", err)
-	}
-	return id.setString(key, val)
-}
-func (id ItemID) SetImgURL3() error {
-	key := "ImgURL3"
-	val, err := id.Item().ImgURL3.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetImgURL3() error: %w", err)
-	}
-	return id.setString(key, val)
-}
-func (id ItemID) SetImgURL4() error {
-	key := "ImgURL4"
-	val, err := id.Item().ImgURL4.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetImgURL4() error: %w", err)
-	}
-	return id.setString(key, val)
-}
-func (id ItemID) SetImgURL5() error {
-	key := "ImgURL5"
-	val, err := id.Item().ImgURL5.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetImgURL5() error: %w", err)
-	}
-	return id.setString(key, val)
-}
-func (id ItemID) SetSpecsURL() error {
-	key := "SpecsURL"
-	val, err := id.Item().SpecsURL.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetSpecsURL() error: %w", err)
-	}
-	return id.setString(key, val)
-}
-func (id ItemID) SetAddDesc() error {
-	key := "AddDesc"
-	val, err := id.Item().AddDesc.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetAddDesc() error: %w", err)
-	}
-	return id.setString(key, val)
-}
-func (id ItemID) SetLongDesc() error {
-	key := "LongDesc"
-	val, err := id.Item().LongDesc.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetLongDesc() error: %w", err)
-	}
-	return id.setString(key, val)
-}
-func (id ItemID) SetMfrID(val MfrID) error {
-	key := "MfrID"
-	return id.setInt(key, int(val))
-}
-func (id ItemID) SetManufacturer() error {
-	key := "Manufacturer"
-	s, err := id.Item().Manufacturer.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetManufacturer() error: %w", err)
-	}
-	if len(s) == 0 {
-		id.setString(key, s)
-		return nil
-	}
-	n, err := MfrIDFor(s)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return fmt.Errorf("ItemID(%d).SetManufacturer(%s) error: %s", id, s, err)
-	}
-	if errors.Is(err, sql.ErrNoRows) {
-		// no such manufacturer exists, set the name field instead
-		id.setString(key, s)
-		return nil
-	}
-	id.Item().MfrID = n
-	return id.SetMfrID(n)
-}
-func (id ItemID) SetModelID(val ModelID) error {
-	key := "ModelID"
-	return id.setInt(key, int(val))
-}
-func (id ItemID) SetModelName() error {
-	key := "ModelName"
-	s, err := id.Item().Model.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID(%d).SetModel(%s) error: %s", id, s, err)
-	}
-	if len(s) == 0 {
-		id.setString(key, s)
-		id.SetModelID(0)
-		return nil
-	}
-	n, err := ModelIDFor(s)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return fmt.Errorf("ItemID(%d).SetModel(%s) error: %s", id, s, err)
-	}
-	if errors.Is(err, sql.ErrNoRows) || n == 0 {
-		// no such model exists, set the name field
-		id.setString(key, s)
-		return nil
-	}
-	// log.Printf("ModelIDFor(s) returned something: %d, error: %s", n, err)
-	// set ModelID to returned ID
-	id.Item().ModelID = n
-	return id.SetModelID(n)
-}
-func (id ItemID) SetModelURL() error {
-	key := "ModelURL"
-	val, err := id.Item().ModelURL.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetModelURL() error: %w", err)
-	}
-	return id.setString(key, val)
-}
-func (id ItemID) SetNotes() error {
-	key := "Notes"
-	val, err := id.Item().Notes.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetNotes() error: %w", err)
-	}
-	return id.setString(key, val)
-}
-func (id ItemID) SetWidth() error {
-	key := "Width"
-	val, err := id.Item().widthFloat.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetWidth() error: %w", err)
-	}
-	return id.setFloat(key, val)
-}
-func (id ItemID) SetHeight() error {
-	key := "Height"
-	val, err := id.Item().heightFloat.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetHeight() error: %w", err)
-	}
-	return id.setFloat(key, val)
-}
-func (id ItemID) SetDepth() error {
-	key := "Depth"
-	val, err := id.Item().depthFloat.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetDepth() error: %w", err)
-	}
-	return id.setFloat(key, val)
-}
-func (id ItemID) SetVolume() error {
-	key := "Volume"
-	val, err := id.Item().volumeFloat.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetVolume() error: %w", err)
-	}
-	return id.setFloat(key, val)
-}
-func (id ItemID) SetWeight() error {
-	key := "Weight"
-	val, err := id.Item().weightFloat.Get()
-	if err != nil {
-		return fmt.Errorf("ItemID.SetWeight() error: %w", err)
-	}
-	return id.setFloat(key, val)
-}
-
-func (id ItemID) SetLengthUnit() error {
-	str, err := id.Item().LengthUnit.Get()
-	if err != nil {
-		return fmt.Errorf("SetLengthUnit error: %w", err)
-	}
-	switch str {
-	case "mm":
-		return id.SetLengthUnitID(millimeter)
-	case "cm":
-		return id.SetLengthUnitID(centimeter)
-	case "dm":
-		return id.SetLengthUnitID(decimeter)
-	case "m":
-		return id.SetLengthUnitID(meter)
-	default:
-		return fmt.Errorf("invalid length UnitID")
-	}
-}
-func (id ItemID) SetLengthUnitID(l UnitID) error {
-	key := "LengthUnitID"
-	val := int(l)
-	return id.setInt(key, val)
-}
-func (id ItemID) SetVolumeUnit() error {
-	str, err := id.Item().VolumeUnit.Get()
-	if err != nil {
-		return fmt.Errorf("SetVolumeUnit error: %w", err)
-	}
-	switch str {
-	case "ml":
-		return id.SetVolumeUnitID(milliliter)
-	case "cl":
-		return id.SetVolumeUnitID(centiliter)
-	case "dl":
-		return id.SetVolumeUnitID(deciliter)
-	case "l":
-		return id.SetVolumeUnitID(liter)
-	default:
-		return fmt.Errorf("invalid volume UnitID")
-	}
-}
-func (id ItemID) SetVolumeUnitID(v UnitID) error {
-	key := "VolumeUnitID"
-	val := int(v)
-	return id.setInt(key, val)
-}
-
-func (id ItemID) SetWeightUnit() error {
-	str, err := id.Item().WeightUnit.Get()
-	if err != nil {
-		return fmt.Errorf("SetWeightUnit error: %w", err)
-	}
-	switch str {
-	case "g":
-		return id.SetWeightUnitID(gram)
-	case "hg":
-		return id.SetWeightUnitID(hectogram)
-	case "kg":
-		return id.SetWeightUnitID(kilogram)
-	default:
-		return fmt.Errorf("invalid weight UnitID")
-	}
-}
-func (id ItemID) SetWeightUnitID(w UnitID) error {
-	key := "WeightUnitID"
-	val := int(w)
-	return id.setInt(key, val)
-}
-
-func (id ItemID) SetItemStatus() error {
-	str, err := id.Item().ItemStatus.Get()
-	if err != nil {
-		return fmt.Errorf("SetItemStatus error: %w", err)
-	}
-	switch str {
-	case lang.X("itemstatus.available", "itemstatus.available"):
-		return id.SetItemStatusID(ItemStatusAvailable)
-	case lang.X("itemstatus.archived", "itemstatus.archived"):
-		return id.SetItemStatusID(ItemStatusArchived)
-	case lang.X("itemstatus.deleted", "itemstatus.deleted"):
-		return id.SetItemStatusID(ItemStatusDeleted)
-	case lang.X("itemstatus.reserved", "itemstatus.reserved"):
-		return id.SetItemStatusID(ItemStatusReserved)
-	case lang.X("itemstatus.sold", "itemstatus.sold"):
-		return id.SetItemStatusID(ItemStatusSold)
-	default:
-		return id.SetItemStatusID(ItemStatusAvailable)
-	}
-}
-
-/* Set ItemStatusID based on contents of ItemID.Item().ItemStatus string */
-func (id ItemID) SetItemStatusID(t ItemStatusID) error {
-	key := "ItemStatusID"
-	val := int(t)
-	return id.setInt(key, val)
-}
-func (id ItemID) updateDateModified() {
-	dm, err := id.DateModified()
-	if err != nil {
-		log.Println(err)
-	}
-	id.Item().DateModified.Set(dm.Format(time.DateTime))
-}
-
-func (id ItemID) setBool(key string, val bool) error {
-	err := setValue("Item", id, key, val)
-	id.updateDateModified()
-	return err
-}
-func (id ItemID) setFloat(key string, val float64) error {
-	err := setValue("Item", id, key, val)
-	id.updateDateModified()
-	return err
-}
-func (id ItemID) setInt(key string, val int) error {
-	err := setValue("Item", id, key, val)
-	id.updateDateModified()
-	return err
-}
-func (id ItemID) setString(key string, val string) error {
-	err := setValue("Item", id, key, val)
-	id.updateDateModified()
-	return err
-}
-
-/* Get the pointer to Item from map or make one and return it */
-func getItem(b *Backend, id ItemID) *Item {
-	if t := b.Items.data[id]; t == nil {
-		t = newItem(b, id)
-		b.Items.data[id] = t
-	}
-	return b.Items.data[id]
-}
-
 type Items struct {
-	db   *sql.DB
 	j    *journal.Journal
 	data map[ItemID]*Item
 
-	ItemIDList                    binding.UntypedList
-	ItemIDSelection               binding.UntypedList
-	SearchResultUniqueCompletions binding.StringList
-	SearchString                  binding.String
-	searchType                    SearchType
-	searchKey                     SearchKey
-	sortKey                       SearchKey
-	sortOrder                     SortOrder
+	ItemIDList      binding.UntypedList
+	ItemIDSelection binding.UntypedList
+	Filter          *Filter
+	Search          *Search
 }
 
-func NewItems(b *Backend) *Items {
+func NewItems() *Items {
 	m := &Items{
-		db:                            b.db,
-		j:                             b.Journal,
-		data:                          make(map[ItemID]*Item),
-		ItemIDList:                    binding.NewUntypedList(),
-		ItemIDSelection:               binding.NewUntypedList(),
-		SearchResultUniqueCompletions: binding.NewStringList(),
-		SearchString:                  binding.NewString(),
-		searchKey:                     SearchKeyName,
-		sortKey:                       SearchKeyItemID,
-		sortOrder:                     SortAscending,
+		j:               b.Journal,
+		data:            make(map[ItemID]*Item),
+		ItemIDList:      binding.NewUntypedList(),
+		ItemIDSelection: binding.NewUntypedList(),
+		Filter:          newFilter(),
+		Search:          newSearch(),
 	}
-	m.SearchString.AddListener(binding.NewDataListener(func() { m.Search() }))
 	return m
 }
-func (m *Items) GetAllItemIDs() {
-	// TODO redo this to fetch all according to current selection/search config, then call after any mod to list
-	query := `SELECT ItemID FROM Item WHERE ItemStatusID <> @0`
-	stmt, err := m.db.Prepare(query)
-	if err != nil {
-		panic(err)
-	}
-	defer stmt.Close()
-	rows, err := stmt.Query(ItemStatusDeleted)
-	if err != nil {
-		panic(err)
-	}
-	var id ItemID
-	m.ItemIDList.Set([]any{})
-	for rows.Next() {
-		rows.Scan(&id)
-		m.ItemIDList.Append(id)
-	}
-}
+
+//	func (m *Items) GetAllItemIDs() {
+//		// TODO redo this to fetch all according to current selection/search config, then call after any mod to list
+//		query := `SELECT ItemID FROM Item WHERE ItemStatusID <> @0`
+//		stmt, err := b.db.Prepare(query)
+//		if err != nil {
+//			panic(err)
+//		}
+//		defer stmt.Close()
+//		rows, err := stmt.Query(ItemStatusDeleted)
+//		if err != nil {
+//			panic(err)
+//		}
+//		var id ItemID
+//		m.ItemIDList.Set([]any{})
+//		for rows.Next() {
+//			rows.Scan(&id)
+//			m.ItemIDList.Append(id)
+//		}
+//	}
 func (m *Items) GetItem(id ItemID) *Item {
-	return getItem(be, id)
+	if t := m.data[id]; t == nil {
+		t = newItem(id)
+		m.data[id] = t
+	}
+	return m.data[id]
 }
 func (m *Items) GetItemIDFor(index widget.ListItemID) (ItemID, error) {
 	id, err := m.ItemIDList.GetValue(index)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		log.Println(err)
+		return 0, err
+	}
 	return id.(ItemID), err
 }
 func (m *Items) GetListItemIDFor(id ItemID) (widget.ListItemID, error) {
@@ -955,24 +241,21 @@ func (m *Items) GetListItemIDFor(id ItemID) (widget.ListItemID, error) {
 func (m *Items) CreateNewItem() (ItemID, error) {
 	var i ItemID
 	query := `INSERT INTO Item DEFAULT VALUES`
-	stmt, err := m.db.Prepare(query)
+	stmt, err := b.db.Prepare(query)
 	if err != nil {
-		// log.Printf("Items.CreateNewItem() error: %s", err)
 		return i, fmt.Errorf("Items.CreateNewItem() error: %w", err)
 	}
 	defer stmt.Close()
 	res, err := stmt.Exec()
 	if err != nil {
-		// log.Printf("Items.CreateNewItem() error: %s", err)
 		return i, fmt.Errorf("Items.CreateNewItem() error: %w", err)
 	}
 	id, err := res.LastInsertId()
 	if err != nil {
-		// log.Printf("Items.CreateNewItem() error: %s", err)
 		return i, fmt.Errorf("Items.CreateNewItem() error: %w", err)
 	}
 	i = ItemID(id)
-	m.Search()
+	m.GetItemIDs()
 	return i, err
 }
 func (m *Items) CopyItem(id ItemID) (ItemID, error) {
@@ -1001,7 +284,7 @@ MfrID, ModelID, Notes, Width, Height, Depth, Volume, Weight,
 LengthUnitID, VolumeUnitID, WeightUnitID, CatID, GroupID, 
 StorageID, ItemStatusID, ItemConditionID
 FROM Item WHERE ItemID = @0`
-	stmt, err := m.db.Prepare(query)
+	stmt, err := b.db.Prepare(query)
 	if err != nil {
 		return id, fmt.Errorf("CopyItem error: %w", err)
 	}
@@ -1012,12 +295,12 @@ FROM Item WHERE ItemID = @0`
 	}
 	lid, _ := res.LastInsertId()
 	newid := ItemID(lid)
-	m.Search()
+	m.GetItemIDs()
 	return newid, err
 }
 func (m *Items) DeleteItem(id ItemID) error {
 	query := `UPDATE Item SET ItemStatusID = @0 WHERE ItemID = @1`
-	stmt, err := m.db.Prepare(query)
+	stmt, err := b.db.Prepare(query)
 	if err != nil {
 		return fmt.Errorf("DeleteItem error: %w", err)
 	}
@@ -1039,92 +322,477 @@ func (m *Items) UnselectItem(id ItemID) error {
 func (m *Items) ClearSelection() error {
 	return m.ItemIDSelection.Set([]any{})
 }
-func (m *Items) Search() {
-	searchString, err := m.SearchString.Get()
-	var query string
-	searchKey := m.searchKey.String()
-	switch m.searchType {
-	case BeginsWith:
-		searchString = fmt.Sprintf("%s%%", searchString)
-		query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` LIKE @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
-	case EndsWith:
-		searchString = fmt.Sprintf("%%%s", searchString)
-		query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` LIKE @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
-	case Contains:
-		searchString = fmt.Sprintf("%%%s%%", searchString)
-		query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` LIKE @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
-	// TODO (maybe... probably not) fix RegEx
-	// case RegExp:
-	// 	query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` REGEXP @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
-	default:
-		// Equals
-		query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` LIKE @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
-	}
-	stmt, err := m.db.Prepare(query)
-	if err != nil {
-		log.Println(fmt.Errorf("search: prepare statement failed: %w", err))
-		return
-	}
-	defer stmt.Close()
-
-	// clearQuery := strings.Replace(query, "@0", searchString, 1)
-	// clearQuery = strings.Replace(clearQuery, "@1", fmt.Sprintf("%d", ItemStatusDeleted), 1)
-	// log.Println(clearQuery)
-
-	rows, err := stmt.Query(searchString, ItemStatusDeleted)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		log.Println(fmt.Errorf("Items.Search() error: %w", err))
-		return
-	}
+func (m *Items) GetItemIDs() {
 	m.ItemIDList.Set([]any{})
+	query := `SELECT ItemID FROM Item WHERE ItemID <> 0 `
+	e := m.Search.complex()
+	query, term := e.addSearchStrings(query)
+	f := m.Filter.complex()
+	query = f.addFilterStrings(query)
+	query += fmt.Sprintf("AND ItemStatusID <> %d ", ItemStatusDeleted) // TODO update this
+	query += "ORDER BY " + e.sortby.String() + " " + e.order.String()
+
+	// searchString, err := m.SearchString.Get()
+	// var query string
+	// searchKey := m.searchKey.String()
+	// switch m.searchType {
+	// case BeginsWith:
+	// 	searchString = fmt.Sprintf("%s%%", searchString)
+	// 	query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` LIKE @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
+	// case EndsWith:
+	// 	searchString = fmt.Sprintf("%%%s", searchString)
+	// 	query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` LIKE @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
+	// case Contains:
+	// 	searchString = fmt.Sprintf("%%%s%%", searchString)
+	// 	query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` LIKE @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
+	// // TODO (maybe... probably not) fix RegEx
+	// // case RegExp:
+	// // 	query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` REGEXP @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
+	// default:
+	// 	// Equals
+	// 	query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` LIKE @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
+	// }
+	// stmt, err := m.db.Prepare(query)
+	// if err != nil {
+	// 	log.Println(fmt.Errorf("search: prepare statement failed: %w", err))
+	// 	return
+	// }
+	// defer stmt.Close()
+
+	// // clearQuery := strings.Replace(query, "@0", searchString, 1)
+	// // clearQuery = strings.Replace(clearQuery, "@1", fmt.Sprintf("%d", ItemStatusDeleted), 1)
+	// // log.Println(clearQuery)
+
+	log.Println(query)
+
+	var err error
+	var rows *sql.Rows
+	switch len(e.scope) {
+	case 1:
+		rows, err = b.db.Query(query, term)
+	case 2:
+		rows, err = b.db.Query(query, term, term)
+	case 3:
+		rows, err = b.db.Query(query, term, term, term)
+	case 4:
+		rows, err = b.db.Query(query, term, term, term, term)
+	default:
+		rows, err = b.db.Query(query)
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		panic(err)
+	}
+	defer rows.Close()
+
+	m.ItemIDList.Set([]any{})
+	m.Search.Completions.Set([]string{})
 	uniqueResults := make(map[string]bool)
-	m.SearchResultUniqueCompletions.Set([]string{})
 	for rows.Next() {
 		var hit string
 		var id ItemID
 		rows.Scan(&id)
 		m.ItemIDList.Append(id)
-		if m.searchKey == SearchKeyName {
+		if e.scope["Name"] {
 			hit, _ = id.Name()
+			if !uniqueResults[hit] {
+				uniqueResults[hit] = true
+				m.Search.Completions.Append(hit)
+			}
 		}
-		if m.searchKey == SearchKeyManufacturer {
+		if e.scope["Manufacturer"] {
 			hit, _ = id.Manufacturer()
+			if !uniqueResults[hit] {
+				uniqueResults[hit] = true
+				m.Search.Completions.Append(hit)
+			}
 		}
-		if !uniqueResults[hit] {
-			uniqueResults[hit] = true
-			m.SearchResultUniqueCompletions.Append(hit)
+		if e.scope["ModelName"] {
+			hit, _ = id.Model()
+			if !uniqueResults[hit] {
+				uniqueResults[hit] = true
+				m.Search.Completions.Append(hit)
+			}
 		}
 	}
+
+	// rows, err := stmt.Query(searchString, ItemStatusDeleted)
+	// if err != nil && !errors.Is(err, sql.ErrNoRows) {
+	// 	log.Println(fmt.Errorf("Items.Search() error: %w", err))
+	// 	return
+	// }
+	// m.ItemIDList.Set([]any{})
+	// uniqueResults := make(map[string]bool)
+	// m.SearchResultUniqueCompletions.Set([]string{})
+	// for rows.Next() {
+	// 	var hit string
+	// 	var id ItemID
+	// 	rows.Scan(&id)
+	// 	m.ItemIDList.Append(id)
+	// 	if m.searchKey == SearchKeyName {
+	// 		hit, _ = id.Name()
+	// 	}
+	// 	if m.searchKey == SearchKeyManufacturer {
+	// 		hit, _ = id.Manufacturer()
+	// 	}
+	// 	if !uniqueResults[hit] {
+	// 		uniqueResults[hit] = true
+	// 		m.SearchResultUniqueCompletions.Append(hit)
+	// 	}
+	// }
 }
-func (m *Items) SetSearchConfig(c SearchType) error {
-	m.searchType = c
-	return nil
+
+type Search struct {
+	Completions binding.StringList
+	Term        binding.String
+	Scope       map[string]binding.Bool
+	Match       SearchTermMatch
+	SortBy      SearchKey
+	Order       SortOrder
 }
-func (m *Items) SetSearchKey(k SearchKey) error {
-	m.searchKey = k
-	return nil
+
+func newSearch() *Search {
+	s := &Search{
+		Completions: binding.NewStringList(),
+		Term:        binding.NewString(),
+		Scope:       make(map[string]binding.Bool),
+		Match:       MatchContains,
+		SortBy:      SearchKeyItemID,
+		Order:       SortAscending,
+	}
+	columns := []string{"Name", "Manufacturer", "ModelName", "ModelDesc"}
+	for _, key := range columns {
+		s.Scope[key] = binding.NewBool()
+		s.Scope[key].AddListener(binding.NewDataListener(func() { b.Items.GetItemIDs() }))
+	}
+	s.Scope["Name"].Set(true)
+	s.Term.AddListener(binding.NewDataListener(func() { b.Items.GetItemIDs() }))
+	return s
 }
-func (m *Items) SetSortKey(k SearchKey) error {
-	m.sortKey = k
-	return nil
+
+func (e *Search) complex() searchComplex {
+	c := searchComplex{
+		scope: make(map[string]bool),
+	}
+	c.term, _ = e.Term.Get()
+	c.scope["Name"], _ = e.Scope["Name"].Get()
+	c.scope["Manufacturer"], _ = e.Scope["Manufacturer"].Get()
+	c.scope["ModelName"], _ = e.Scope["ModelName"].Get()
+	c.scope["ModelDesc"], _ = e.Scope["ModelDesc"].Get()
+	c.match = e.Match
+	c.sortby = e.SortBy
+	c.order = e.Order
+	return c
 }
-func (m *Items) SetSortOrder(o SortOrder) error {
-	m.sortOrder = o
-	return nil
+
+type searchComplex struct {
+	term   string
+	scope  map[string]bool
+	match  SearchTermMatch
+	sortby SearchKey
+	order  SortOrder
 }
-func (m *Items) SearchKey() SearchKey {
-	return m.searchKey
+
+func (e searchComplex) addSearchStrings(query string) (string, string) {
+	var term string
+	if e.term == "" {
+		return query, term
+	}
+	columns := []string{"Name", "Manufacturer", "ModelName", "ModelDesc"}
+	var keys []string
+	for _, column := range columns {
+		if e.scope[column] {
+			keys = append(keys, column)
+		}
+	}
+	if len(keys) < 1 {
+		return query, term
+	}
+	switch e.match {
+	case MatchBeginsWith:
+		term = fmt.Sprintf("%s%%", e.term)
+		if len(keys) > 1 {
+			query += " AND ("
+			for i, key := range keys {
+				if i > 0 {
+					query += " OR "
+				}
+				query += fmt.Sprintf("%s LIKE ?", key)
+			}
+			query += ") "
+		} else {
+			query += fmt.Sprintf(" AND %s LIKE ? ", keys[0])
+		}
+	case MatchEndsWith:
+		term = fmt.Sprintf("%%%s", e.term)
+		if len(keys) > 1 {
+			query += " AND ("
+			for i, key := range keys {
+				if i > 0 {
+					query += " OR "
+				}
+				query += fmt.Sprintf("%s LIKE ?", key)
+			}
+			query += ") "
+		} else {
+			query += fmt.Sprintf(" AND %s LIKE ? ", keys[0])
+		}
+	case MatchContains:
+		term = fmt.Sprintf("%%%s%%", e.term)
+		if len(keys) > 1 {
+			query += " AND ("
+			for i, key := range keys {
+				if i > 0 {
+					query += " OR "
+				}
+				query += fmt.Sprintf("%s LIKE ?", key)
+			}
+			query += ") "
+		} else {
+			query += fmt.Sprintf(" AND %s LIKE ? ", keys[0])
+		}
+	default:
+		// MatchEquals
+		term = fmt.Sprintf("%s", e.term)
+		if len(keys) > 1 {
+			query += " AND ("
+			for i, key := range keys {
+				if i > 0 {
+					query += " OR "
+				}
+				query += fmt.Sprintf("%s LIKE ?", key)
+			}
+			query += ") "
+		} else {
+			query += fmt.Sprintf(" AND %s LIKE ? ", keys[0])
+		}
+	}
+	return query, term
 }
-func (m *Items) SortKey() SearchKey {
-	return m.sortKey
+
+type Filter struct {
+	Category             binding.String
+	Manufacturer         binding.String
+	Model                binding.String
+	Width, Height, Depth binding.String
+	Volume, Weight       binding.String
 }
-func (m *Items) SortOrder() SortOrder {
-	return m.sortOrder
+
+func newFilter() *Filter {
+	f := &Filter{
+		Category:     binding.NewString(),
+		Manufacturer: binding.NewString(),
+		Model:        binding.NewString(),
+		Width:        binding.NewString(),
+		Height:       binding.NewString(),
+		Depth:        binding.NewString(),
+		Volume:       binding.NewString(),
+		Weight:       binding.NewString(),
+	}
+	f.Category.AddListener(binding.NewDataListener(func() { b.Items.GetItemIDs() }))
+	f.Manufacturer.AddListener(binding.NewDataListener(func() { b.Items.GetItemIDs() }))
+	f.Model.AddListener(binding.NewDataListener(func() { b.Items.GetItemIDs() }))
+	f.Width.AddListener(binding.NewDataListener(func() { b.Items.GetItemIDs() }))
+	f.Height.AddListener(binding.NewDataListener(func() { b.Items.GetItemIDs() }))
+	f.Depth.AddListener(binding.NewDataListener(func() { b.Items.GetItemIDs() }))
+	f.Volume.AddListener(binding.NewDataListener(func() { b.Items.GetItemIDs() }))
+	f.Weight.AddListener(binding.NewDataListener(func() { b.Items.GetItemIDs() }))
+	return f
+}
+
+func (f Filter) complex() filterComplex {
+	c := filterComplex{}
+	if s, _ := f.Category.Get(); s != "" {
+		c.CatID, _ = CatIDFor(s)
+	}
+	if s, _ := f.Manufacturer.Get(); s != "" {
+		if id, err := MfrIDFor(s); id != 0 && err == nil {
+			c.MfrID = id
+		} else {
+			c.Manufacturer = s
+		}
+	}
+	if s, _ := f.Model.Get(); s != "" {
+		if id, err := ModelIDFor(s); id != 0 && err == nil {
+			c.ModelID = id
+		} else {
+			c.Model = s
+		}
+	}
+	if s, _ := f.Width.Get(); s != "" {
+		if strings.Contains(s, "-") {
+			t := strings.Split(s, "-")
+			min, err := strconv.ParseFloat(t[0], 64)
+			if err != nil {
+				log.Println(err)
+			} else {
+				c.MinWidth = min
+			}
+			max, err := strconv.ParseFloat(t[1], 64)
+			if err != nil {
+				log.Println(err)
+			} else {
+				c.MaxWidth = max
+			}
+		} else {
+			w, err := strconv.ParseFloat(s, 64)
+			if err != nil {
+				log.Println(err)
+			} else {
+				c.MinWidth = w
+				c.MaxWidth = w
+			}
+		}
+	}
+	if s, _ := f.Height.Get(); s != "" {
+		if strings.Contains(s, "-") {
+			t := strings.Split(s, "-")
+			min, err := strconv.ParseFloat(t[0], 64)
+			if err != nil {
+				log.Println(err)
+			} else {
+				c.MinHeight = min
+			}
+			max, err := strconv.ParseFloat(t[1], 64)
+			if err != nil {
+				log.Println(err)
+			} else {
+				c.MaxHeight = max
+			}
+		} else {
+			w, err := strconv.ParseFloat(s, 64)
+			if err != nil {
+				log.Println(err)
+			} else {
+				c.MinHeight = w
+				c.MaxHeight = w
+			}
+		}
+	}
+	if s, _ := f.Depth.Get(); s != "" {
+		if strings.Contains(s, "-") {
+			t := strings.Split(s, "-")
+			min, err := strconv.ParseFloat(t[0], 64)
+			if err != nil {
+				log.Println(err)
+			} else {
+				c.MinDepth = min
+			}
+			max, err := strconv.ParseFloat(t[1], 64)
+			if err != nil {
+				log.Println(err)
+			} else {
+				c.MaxDepth = max
+			}
+		} else {
+			w, err := strconv.ParseFloat(s, 64)
+			if err != nil {
+				log.Println(err)
+			} else {
+				c.MinDepth = w
+				c.MaxDepth = w
+			}
+		}
+	}
+	if s, _ := f.Volume.Get(); s != "" {
+		if strings.Contains(s, "-") {
+			t := strings.Split(s, "-")
+			min, err := strconv.ParseFloat(t[0], 64)
+			if err != nil {
+				log.Println(err)
+			} else {
+				c.MinVolume = min
+			}
+			max, err := strconv.ParseFloat(t[1], 64)
+			if err != nil {
+				log.Println(err)
+			} else {
+				c.MaxVolume = max
+			}
+		} else {
+			w, err := strconv.ParseFloat(s, 64)
+			if err != nil {
+				log.Println(err)
+			} else {
+				c.MinVolume = w
+				c.MaxVolume = w
+			}
+		}
+	}
+	if s, _ := f.Weight.Get(); s != "" {
+		if strings.Contains(s, "-") {
+			t := strings.Split(s, "-")
+			min, err := strconv.ParseFloat(t[0], 64)
+			if err != nil {
+				log.Println(err)
+			} else {
+				c.MinWeight = min
+			}
+			max, err := strconv.ParseFloat(t[1], 64)
+			if err != nil {
+				log.Println(err)
+			} else {
+				c.MaxWeight = max
+			}
+		} else {
+			w, err := strconv.ParseFloat(s, 64)
+			if err != nil {
+				log.Println(err)
+			} else {
+				c.MinWeight = w
+				c.MaxWeight = w
+			}
+		}
+	}
+	return c
+}
+
+type filterComplex struct {
+	CatID                CatID
+	MfrID                MfrID
+	ModelID              ModelID
+	Manufacturer         string
+	Model                string
+	MinWidth, MaxWidth   float64
+	MinHeight, MaxHeight float64
+	MinDepth, MaxDepth   float64
+	MinVolume, MaxVolume float64
+	MinWeight, MaxWeight float64
+}
+
+func (f filterComplex) addFilterStrings(query string) string {
+	if f.CatID != 0 {
+		query += fmt.Sprintf("AND CatID = %d ", f.CatID)
+	}
+	if f.MfrID != 0 {
+		query += fmt.Sprintf("AND MfrID = %d ", f.MfrID)
+	} else if f.Manufacturer != "" {
+		query += fmt.Sprintf("AND Model = '%s' ", f.Model)
+	}
+	if f.ModelID != 0 {
+		query += fmt.Sprintf("AND ModelID = %d ", f.ModelID)
+	} else if f.Model != "" {
+		query += fmt.Sprintf("AND Manufacturer = '%s' ", f.Manufacturer)
+	}
+	if f.MinWidth != 0 || f.MaxWidth != 0 {
+		query += fmt.Sprintf("AND Width BETWEEN %f AND %f ", f.MinWidth, f.MaxWidth)
+	}
+	if f.MinHeight != 0 || f.MaxHeight != 0 {
+		query += fmt.Sprintf("AND Height BETWEEN %f AND %f ", f.MinHeight, f.MaxHeight)
+	}
+	if f.MinDepth != 0 || f.MaxDepth != 0 {
+		query += fmt.Sprintf("AND Depth BETWEEN %f AND %f ", f.MinDepth, f.MaxDepth)
+	}
+	if f.MinVolume != 0 || f.MaxVolume != 0 {
+		query += fmt.Sprintf("AND Volume BETWEEN %f AND %f ", f.MinVolume, f.MaxVolume)
+	}
+	if f.MinWeight != 0 || f.MaxWeight != 0 {
+		query += fmt.Sprintf("AND Weight BETWEEN %f AND %f ", f.MinWeight, f.MaxWeight)
+	}
+	return query
 }
 
 type Item struct {
 	binding.DataItem
-	db           *sql.DB
 	ItemID       ItemID
 	ItemIDString binding.String
 	Name         binding.String
@@ -1173,11 +841,12 @@ type Item struct {
 	DateModified binding.String
 }
 
-func newItem(b *Backend, id ItemID) *Item {
+func newItem(id ItemID) *Item {
 	t := &Item{
-		db:     b.db,
-		ItemID: id,
-		CatID:  CatID(0),
+		ItemID:  id,
+		CatID:   CatID(0),
+		MfrID:   MfrID(0),
+		ModelID: ModelID(0),
 	}
 
 	t.getAllFields()
@@ -1191,7 +860,7 @@ func newItem(b *Backend, id ItemID) *Item {
 	t.VolumeString = binding.FloatToStringWithFormat(t.volumeFloat, "%.2f")
 	t.WeightString = binding.FloatToStringWithFormat(t.weightFloat, "%.2f")
 
-	t.Name.AddListener(binding.NewDataListener(func() { t.ItemID.SetName(); b.Items.Search(); t.ItemID.CompileLongDesc() }))
+	t.Name.AddListener(binding.NewDataListener(func() { t.ItemID.SetName(); b.Items.GetItemIDs(); t.ItemID.CompileLongDesc() }))
 	t.Category.AddListener(binding.NewDataListener(func() { t.ItemID.SetCategory(); t.ItemID.CompileLongDesc() }))
 	t.priceFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetPrice(); t.ItemID.CompileLongDesc() }))
 	t.Currency.AddListener(binding.NewDataListener(func() { t.ItemID.SetCurrency(); t.ItemID.CompileLongDesc() }))
@@ -1280,7 +949,7 @@ Width, Height, Depth, Volume, Weight,
 LengthUnitID, VolumeUnitID, WeightUnitID, 
 ItemStatusID, DateCreated, DateModified 
 FROM Item WHERE ItemID = @0`
-	stmt, err := t.db.Prepare(query)
+	stmt, err := b.db.Prepare(query)
 	if err != nil {
 		return fmt.Errorf("get all item fields error: %w", err)
 	}

@@ -81,25 +81,41 @@ func newProductView(b *backend.Backend) *productView {
 	createItem := func(branch bool) fyne.CanvasObject {
 		if branch {
 			return container.NewHBox(&widget.Label{
-				Text:      "Template branch category name",
+				Text:      "Template branch Manufacturer name",
 				TextStyle: fyne.TextStyle{Bold: true},
-			}, widget.NewLabel("(000)"))
+			}, widget.NewLabel("(00000)"))
 		}
-		return widget.NewLabel("Template leaf category name")
+		return widget.NewLabel("Template leaf Product name")
 	}
-
 	updateItem := func(di binding.DataItem, branch bool, co fyne.CanvasObject) {
+		v, err := di.(binding.Untyped).Get()
+		if err != nil {
+			panic(err)
+		}
 		if branch {
-			co.(*fyne.Container).Objects[0].(*widget.Label).Bind(di.(binding.String))
-			// TODO use untyped tree
-			// co.(*fyne.Container).Objects[1].(*widget.Label).SetText(fmt.Sprintf("(%d)", len()))
+			MfrID := v.(backend.MfrID)
+			co.(*fyne.Container).Objects[0].(*widget.Label).Bind(MfrID.Manufacturer().Name)
+			co.(*fyne.Container).Objects[1].(*widget.Label).SetText(fmt.Sprintf("(%d)", len(MfrID.Children())))
+			if len(MfrID.Children()) > 0 {
+				co.(*fyne.Container).Objects[1].(*widget.Label).Show()
+			} else {
+				co.(*fyne.Container).Objects[1].(*widget.Label).Hide()
+			}
 		} else {
-			co.(*widget.Label).Bind(di.(binding.String))
+			if v.(backend.NumID).TypeName() == "MfrID" {
+				id := v.(backend.MfrID)
+				co.(*widget.Label).Bind(id.Manufacturer().Name)
+			} else {
+				id := v.(backend.ModelID)
+				co.(*widget.Label).Bind(id.Model().Name)
+				co.(*widget.Label).TextStyle = fyne.TextStyle{Italic: true}
+			}
 		}
 	}
 
 	tree := widget.NewTreeWithData(b.Metadata.ProductTree, createItem, updateItem)
 	tree.OnSelected = func(uid widget.TreeNodeID) {
+		tree.OpenBranch(uid)
 		r := regexp.MustCompile(`MDL-\d+$`)
 		mdl := r.FindString(uid)
 		if mdl != "" {
@@ -114,7 +130,6 @@ func newProductView(b *backend.Backend) *productView {
 		} else {
 			r := regexp.MustCompile(`MFR-\d+([^FR]*)$`)
 			mfr := r.FindString(uid)
-			log.Printf("uid = %s, mfr = %s", uid, mfr)
 			mfr = strings.TrimPrefix(mfr, "MFR-")
 			MfrID, err := strconv.Atoi(mfr)
 			if err != nil {
@@ -125,7 +140,7 @@ func newProductView(b *backend.Backend) *productView {
 			p.LoadMfr(backend.MfrID(MfrID))
 		}
 	}
-	tree.OnUnselected = func(uid widget.TreeNodeID) { b.Metadata.ClearProdSelection() }
+	tree.OnUnselected = func(uid widget.TreeNodeID) { tree.CloseBranch(uid); b.Metadata.ClearProdSelection() }
 
 	p.entry = make(bridge.Entries)
 	p.label = make(bridge.Labels)
@@ -313,7 +328,7 @@ func newCategoryView(b *backend.Backend) *categoryView {
 		if branch {
 			return container.NewHBox(
 				widget.NewLabel("Template branch category name"),
-				widget.NewLabel("(1)"),
+				widget.NewLabel("(0000)"),
 			)
 		}
 		return widget.NewLabel("Template leaf category name")
@@ -327,7 +342,7 @@ func newCategoryView(b *backend.Backend) *categoryView {
 		CatID := v.(backend.CatID)
 		if branch {
 			co.(*fyne.Container).Objects[0].(*widget.Label).Bind(CatID.Category().Name)
-			co.(*fyne.Container).Objects[1].(*widget.Label).SetText(fmt.Sprintf("(%d)", len(CatID.Category().CatID.Children())))
+			co.(*fyne.Container).Objects[1].(*widget.Label).SetText(fmt.Sprintf("(%d)", len(CatID.Children())))
 		} else {
 			co.(*widget.Label).Bind(CatID.Category().Name)
 		}
@@ -336,10 +351,12 @@ func newCategoryView(b *backend.Backend) *categoryView {
 		tree: widget.NewTreeWithData(b.Metadata.CatIDTree, createTreeItem, updateTreeItem),
 	}
 	cv.tree.OnSelected = func(uid widget.TreeNodeID) {
+		cv.tree.OpenBranch(uid)
 		b.Metadata.SelectCategory(b.Metadata.GetCatIDForTreeItem(uid))
 		cv.Load(b, b.Metadata.GetCatIDForTreeItem(uid))
 	}
 	cv.tree.OnUnselected = func(uid widget.TreeNodeID) {
+		cv.tree.CloseBranch(uid)
 		b.Metadata.UnselectCategory(b.Metadata.GetCatIDForTreeItem(uid))
 		cv.Unload()
 	}

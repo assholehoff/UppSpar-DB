@@ -4,6 +4,6 @@ package backend
 
 type Wishlist struct{}
 
-func NewWishlist(b *Backend) *Wishlist {
+func NewWishlist() *Wishlist {
 	return &Wishlist{}
 }

@@ -19,11 +19,10 @@ type Setting struct {
 func newSetting(key string) *Setting {
 	return &Setting{key: key, value: binding.NewString()}
 }
-func (s *Setting) get(db *sql.DB) {
+func (s *Setting) get() {
 	query := `SELECT ConfigVal FROM Config WHERE ConfigKey = @0`
-	stmt, err := db.Prepare(query)
+	stmt, err := b.db.Prepare(query)
 	if err != nil {
-		log.Println("Setting.pull() panic!")
 		panic(err)
 	}
 	defer stmt.Close()
@@ -31,12 +30,11 @@ func (s *Setting) get(db *sql.DB) {
 	err = stmt.QueryRow(s.key).Scan(&t)
 	s.value.Set(t.String)
 }
-func (s *Setting) set(db *sql.DB) error {
+func (s *Setting) set() error {
 	val, err := s.value.Get()
 	query := `UPDATE Config SET ConfigVal = @0 WHERE ConfigKey = @1 AND ConfigVal <> @2`
-	stmt, err := db.Prepare(query)
+	stmt, err := b.db.Prepare(query)
 	if err != nil {
-		log.Println("Setting.push() panic!")
 		panic(err)
 	}
 	defer stmt.Close()
@@ -45,18 +43,15 @@ func (s *Setting) set(db *sql.DB) error {
 }
 
 type Settings struct {
-	db                *sql.DB
 	j                 *journal.Journal
 	m                 map[string]*Setting
 	ItemIDWidth       binding.Int
 	ResumeLastSession binding.Bool
 }
 
-func NewSettings(b *Backend) *Settings {
-	j := b.Journal
+func NewSettings() *Settings {
 	s := &Settings{
-		db:                b.db,
-		j:                 j,
+		j:                 b.Journal,
 		m:                 make(map[string]*Setting),
 		ItemIDWidth:       binding.NewInt(),
 		ResumeLastSession: binding.NewBool(),
@@ -74,28 +69,21 @@ func NewSettings(b *Backend) *Settings {
 	return s
 }
 
-func (s *Settings) getItemIDWidth() int {
-	i, err := s.ItemIDWidth.Get()
-	if err != nil {
-		panic(err)
-	}
-	return i
-}
 func (s *Settings) getSetting(key string) *Setting {
 	// TODO debug this thing
 	t := s.m[key]
 	if t == nil {
 		t = newSetting(key)
-		t.get(s.db)
+		t.get()
 	}
 	return t
 }
 func (s *Settings) initItemIDWidth() {
 	key := "ItemIDWidth"
 	s.m[key] = newSetting(key)
-	s.m[key].get(s.db)
+	s.m[key].get()
 	s.ItemIDWidth = binding.StringToInt(s.m[key].value)
 	s.m[key].value.AddListener(binding.NewDataListener(func() {
-		s.m[key].set(s.db)
+		s.m[key].set()
 	}))
 }

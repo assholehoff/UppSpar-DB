@@ -95,7 +95,7 @@ func (id CatID) TypeName() string {
 func (id CatID) Branch() bool {
 	var CatID CatID
 	query := `SELECT CatID FROM Category WHERE ParentID = @0 LIMIT 1`
-	err := be.db.QueryRow(query, id).Scan(&CatID)
+	err := b.db.QueryRow(query, id).Scan(&CatID)
 	return !errors.Is(err, sql.ErrNoRows)
 }
 func (id CatID) ParentID() (CatID, error) {
@@ -116,7 +116,7 @@ func ancestors(p CatID, n int) int {
 func (id CatID) Children() []CatID {
 	var children []CatID
 	query := `SELECT CatID FROM Category WHERE ParentID = @0 ORDER BY Name ASC`
-	rows, err := be.db.Query(query, id)
+	rows, err := b.db.Query(query, id)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		panic(err)
 	}
@@ -164,7 +164,7 @@ func (id CatID) SetParent() error {
 
 }
 func (id CatID) Category() *Category {
-	return getCategory(be, id)
+	return getCategory(id)
 }
 func (id CatID) ShowPrice() bool {
 	b, err := id.getConfig("ShowPrice")
@@ -175,24 +175,24 @@ func (id CatID) ShowPrice() bool {
 }
 func (id CatID) getConfig(key string) (val bool, err error) {
 	query := `SELECT ConfigVal FROM Category_Config WHERE CatID = @0 AND ConfigKey = @1`
-	var b sql.NullBool
-	err = be.db.QueryRow(query, id, key).Scan(&b)
+	var nb sql.NullBool
+	err = b.db.QueryRow(query, id, key).Scan(&nb)
 	if errors.Is(err, sql.ErrNoRows) {
 		err = id.createConfigKey(key)
 	}
-	if b.Valid {
-		val = b.Bool
+	if nb.Valid {
+		val = nb.Bool
 	} else {
-		log.Printf("CatID(%d).getConfig(%s) b is invalid!", id, key)
+		log.Printf("CatID(%d).getConfig(%s) nb is invalid!", id, key)
 	}
-	// log.Printf("CatID(%d).getConfig(%s) returned %v", id, key, b.Bool)
+	// log.Printf("CatID(%d).getConfig(%s) returned %v", id, key, nb.Bool)
 	return
 }
 
 /* Get the pointer to Category from map or make one and return it */
-func getCategory(b *Backend, id CatID) *Category {
+func getCategory(id CatID) *Category {
 	if c := b.Metadata.categoryData[id]; c == nil {
-		c = newCategory(b, id)
+		c = newCategory(id)
 		b.Metadata.categoryData[id] = c
 	}
 	return b.Metadata.categoryData[id]
@@ -234,13 +234,13 @@ func (id CatID) getString(key string) (val string, err error) {
 }
 func (id CatID) createConfigKey(key string) error {
 	query := `INSERT INTO Category_Config (CatID, ConfigKey, ConfigVal) VALUES (@0, @1, false)`
-	_, err := be.db.Exec(query, id, key)
+	_, err := b.db.Exec(query, id, key)
 	// log.Printf("createConfigKey(%s) returned %v", key, err)
 	return err
 }
 func (id CatID) setConfig(key string, val bool) error {
 	query := `UPDATE Category_Config SET ConfigVal = @0 WHERE CatID = @1 AND ConfigKey = @2`
-	_, err := be.db.Exec(query, val, id, key)
+	_, err := b.db.Exec(query, val, id, key)
 	// log.Printf("CatID(%d).setConfig(%s, %v) returned %v", id, key, val, err)
 	return err
 }

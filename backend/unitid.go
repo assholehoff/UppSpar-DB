@@ -108,7 +108,7 @@ func (id UnitID) String() string {
 func (id UnitID) Name() (val string, err error) {
 	var s sql.NullString
 	query := `SELECT Text FROM Metric WHERE UnitID = @0`
-	stmt, err := be.db.Prepare(query)
+	stmt, err := b.db.Prepare(query)
 	if err != nil {
 		return val, fmt.Errorf("UnitID(%d).Name() error: %w", id, err)
 	}

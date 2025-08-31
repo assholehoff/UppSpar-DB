@@ -9,14 +9,12 @@ import (
 
 type Manufacturer struct {
 	binding.DataItem
-	db    *sql.DB
 	MfrID MfrID
 	Name  binding.String
 }
 
-func newMfr(b *Backend, id MfrID) *Manufacturer {
+func newMfr(id MfrID) *Manufacturer {
 	mfr := &Manufacturer{
-		db:    b.db,
 		MfrID: id,
 		Name:  binding.NewString(),
 	}

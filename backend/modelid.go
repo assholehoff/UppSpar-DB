@@ -318,10 +318,8 @@ func (id ModelID) SetWidth() error {
 	key := "Width"
 	val, err := id.Model().widthFloat.Get()
 	if err != nil {
-		log.Println("error getting bound float")
 		return fmt.Errorf("ModelID.SetWidth() error: %w", err)
 	}
-	log.Printf("ModelID(%d).SetWidth(%f)", id, val)
 	return id.setFloat(key, val)
 }
 func (id ModelID) SetHeight() error {
@@ -442,13 +440,13 @@ func (id ModelID) setString(key string, val string) error {
 }
 
 func (id ModelID) Model() *Model {
-	return getModel(be, id)
+	return getModel(id)
 }
 
 /* Get the pointer to Model from map or make one and return it */
-func getModel(b *Backend, id ModelID) *Model {
+func getModel(id ModelID) *Model {
 	if mdl := b.Metadata.modelData[id]; mdl == nil {
-		mdl = newModel(b, id)
+		mdl = newModel(id)
 		b.Metadata.modelData[id] = mdl
 	}
 	return b.Metadata.modelData[id]

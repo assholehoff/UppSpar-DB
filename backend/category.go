@@ -10,16 +10,14 @@ import (
 
 type Category struct {
 	binding.DataItem
-	db     *sql.DB
 	CatID  CatID
 	Name   binding.String
 	Parent binding.String
 	Config map[string]binding.Bool
 }
 
-func newCategory(b *Backend, id CatID) *Category {
+func newCategory(id CatID) *Category {
 	c := &Category{
-		db:     b.db,
 		CatID:  id,
 		Name:   binding.NewString(),
 		Parent: binding.NewString(),
@@ -56,7 +54,7 @@ func (c *Category) getNameStrings() {
 	var Name sql.NullString
 	var ParentID CatID
 	query := `SELECT Name, ParentID FROM Category WHERE CatID = @0`
-	c.db.QueryRow(query, c.CatID).Scan(&Name, &ParentID)
+	b.db.QueryRow(query, c.CatID).Scan(&Name, &ParentID)
 
 	c.Name.Set(Name.String)
 
