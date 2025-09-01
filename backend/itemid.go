@@ -152,22 +152,17 @@ func (id ItemID) MfrID() (MfrID, error) {
 	return MfrID(mid), err
 }
 func (id ItemID) Manufacturer() (string, error) {
-	mid, err := id.MfrID()
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		panic(err)
-	}
-	return mid.Name()
+	return id.getString("Manufacturer")
 }
 func (id ItemID) ModelID() (ModelID, error) {
 	mid, err := id.getInt("ModelID")
 	return ModelID(mid), err
 }
-func (id ItemID) Model() (string, error) {
-	mid, err := id.ModelID()
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		panic(err)
-	}
-	return mid.Name()
+func (id ItemID) ModelName() (string, error) {
+	return id.getString("ModelName")
+}
+func (id ItemID) ModelDesc() (string, error) {
+	return id.getString("ModelDesc")
 }
 func (id ItemID) ModelURL() (string, error) {
 	return id.getString("ModelURL")
@@ -176,49 +171,23 @@ func (id ItemID) Notes() (string, error) {
 	return id.getString("Notes")
 }
 func (id ItemID) Width() (float64, error) {
-	if mi, _ := id.ModelID(); mi == 0 {
-		log.Printf("ModelID is 0, shortcircuiting...")
-		return id.getFloat("Width")
-	}
-	w, _ := id.getFloat("Width")
-	h, _ := id.getFloat("Height")
-	d, _ := id.getFloat("Depth")
-	if w == 0 && h == 0 && d == 0 {
-		v, err := id.Item().ModelID.Width()
-		log.Printf("item width is 0 but ModelID is %d, show model width %f and err %s", id.Item().ModelID, v, err)
-		return id.Item().ModelID.Width()
-	}
-	log.Printf("one or more dimensions is not 0, returning width field")
+	// TODO set this (for ModelID) in SQL with a trigger instead
 	return id.getFloat("Width")
 }
 func (id ItemID) Height() (float64, error) {
-	if mi, _ := id.ModelID(); mi == 0 {
-		return id.getFloat("Height")
-	}
-	w, _ := id.getFloat("Width")
-	h, _ := id.getFloat("Height")
-	d, _ := id.getFloat("Depth")
-	if w == 0 && h == 0 && d == 0 {
-		return id.Item().ModelID.Height()
-	}
+	// TODO set this (for ModelID) in SQL with a trigger instead
 	return id.getFloat("Height")
 }
 func (id ItemID) Depth() (float64, error) {
-	if mi, _ := id.ModelID(); mi == 0 {
-		return id.getFloat("Depth")
-	}
-	w, _ := id.getFloat("Width")
-	h, _ := id.getFloat("Height")
-	d, _ := id.getFloat("Depth")
-	if w == 0 && h == 0 && d == 0 {
-		return id.Item().ModelID.Depth()
-	}
+	// TODO set this (for ModelID) in SQL with a trigger instead
 	return id.getFloat("Depth")
 }
 func (id ItemID) Volume() (float64, error) {
+	// TODO set this (for ModelID) in SQL with a trigger instead
 	return id.getFloat("Volume")
 }
 func (id ItemID) Weight() (float64, error) {
+	// TODO set this (for ModelID) in SQL with a trigger instead
 	return id.getFloat("Weight")
 }
 func (id ItemID) LengthUnit() (string, error) {
@@ -330,10 +299,6 @@ func (id ItemID) CompileAddDesc() error {
 	if w > 0 {
 		addDesc += fmt.Sprintf("Vikt: %.2f %s\n", w, u)
 	}
-	n, _ := id.Notes()
-	if n != "" {
-		addDesc += fmt.Sprintf("Anmärkningar: %s\n", n)
-	}
 	id.Item().AddDesc.Set(addDesc)
 	return id.SetAddDesc()
 }
@@ -358,11 +323,17 @@ func (id ItemID) CompileLongDesc() error {
 			n = false
 		}
 	}
+	// n, _ := id.Notes()
+	// if n != "" {
+	// 	addDesc += fmt.Sprintf("Anmärkningar: %s\n", n)
+	// }
 	/* Manufacturer and model */
 	addStringToLine(id.Manufacturer())
-	addStringToLine(id.Model())
+	addStringToLine(id.ModelName())
 	addNewlines(1)
 	addStringToLine(id.Name())
+	addNewlines(2)
+	addStringToLine(id.ModelDesc())
 	addNewlines(2)
 	addStringToLine(id.Notes())
 
@@ -539,51 +510,7 @@ func (id ItemID) SetManufacturer() error {
 	return id.SetMfrID(n)
 }
 func (id ItemID) SetModelID(val ModelID) error {
-	key := "ModelID"
-	err := id.setInt(key, int(val))
-	if err != nil {
-		log.Printf("updating fields with model data...")
-		id.Item().CatID = val.Model().CatID
-		// Update fields with data from ModelID
-		// General description
-		if d, _ := val.Desc(); d != "" {
-			id.Item().ModelDesc.Set(d)
-		}
-		// Measurements
-		touched := false
-		if w, _ := val.Width(); w != 0 {
-			id.Item().widthFloat.Set(w)
-			touched = true
-		}
-		if h, _ := val.Height(); h != 0 {
-			id.Item().heightFloat.Set(h)
-			touched = true
-		}
-		if d, _ := val.Depth(); d != 0 {
-			id.Item().depthFloat.Set(d)
-			touched = true
-		}
-		if touched {
-			iu, _ := id.LengthUnitID()
-			mu, _ := val.LengthUnitID()
-			if iu != mu {
-				id.SetLengthUnitID(mu)
-			}
-		}
-		// Volume
-		if v, _ := val.Volume(); v != 0 {
-			id.Item().volumeFloat.Set(v)
-			u, _ := val.VolumeUnitID()
-			id.SetVolumeUnitID(u)
-		}
-		// Weight
-		if w, _ := val.Weight(); w != 0 {
-			id.Item().weightFloat.Set(w)
-			u, _ := val.WeightUnitID()
-			id.SetWeightUnitID(u)
-		}
-	}
-	return err
+	return id.setInt("ModelID", int(val))
 }
 func (id ItemID) SetModelName() error {
 	key := "ModelName"
@@ -591,25 +518,7 @@ func (id ItemID) SetModelName() error {
 	if err != nil {
 		return fmt.Errorf("ItemID(%d).SetModel(%s) error: %s", id, s, err)
 	}
-	if len(s) == 0 {
-		id.setString(key, s)
-		id.SetModelID(0)
-		return nil
-	}
-	mfr, _ := id.MfrID()
-	n, err := ModelIDFor(mfr, s)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return fmt.Errorf("ItemID(%d).SetModel(%s) error: %s", id, s, err)
-	}
-	if errors.Is(err, sql.ErrNoRows) || n == 0 {
-		// no such model exists, set the name field
-		id.setString(key, s)
-		return nil
-	}
-	// log.Printf("ModelIDFor(s) returned something: %d, error: %s", n, err)
-	// set ModelID to returned ID
-	id.Item().ModelID = n
-	return id.SetModelID(n)
+	return id.setString(key, s)
 }
 func (id ItemID) SetModelURL() error {
 	key := "ModelURL"

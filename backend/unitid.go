@@ -104,6 +104,133 @@ func (id UnitID) String() string {
 	}
 }
 
+func (id UnitID) Gram(f float64) float64 {
+	switch id {
+	case gram:
+		return f
+	case hectogram:
+		return f / 100
+	default:
+		return f / 1000
+	}
+}
+func (id UnitID) Hectogram(f float64) float64 {
+	switch id {
+	case gram:
+		return f * 100
+	case hectogram:
+		return f
+	default:
+		return f / 10
+	}
+}
+func (id UnitID) Kilogram(f float64) float64 {
+	switch id {
+	case gram:
+		return f * 1000
+	case hectogram:
+		return f * 10
+	default:
+		return f
+	}
+}
+func (id UnitID) Milliliter(f float64) float64 {
+	switch id {
+	case milliliter:
+		return f
+	case centiliter:
+		return f / 10
+	case deciliter:
+		return f / 100
+	default:
+		return f / 1000
+	}
+}
+func (id UnitID) Centiliter(f float64) float64 {
+	switch id {
+	case milliliter:
+		return f * 10
+	case centiliter:
+		return f
+	case deciliter:
+		return f / 10
+	default:
+		return f / 100
+	}
+}
+func (id UnitID) Deciliter(f float64) float64 {
+	switch id {
+	case milliliter:
+		return f * 100
+	case centiliter:
+		return f * 10
+	case deciliter:
+		return f
+	default:
+		return f / 10
+	}
+}
+func (id UnitID) Liter(f float64) float64 {
+	switch id {
+	case milliliter:
+		return f * 1000
+	case centiliter:
+		return f * 100
+	case deciliter:
+		return f * 10
+	default:
+		return f
+	}
+}
+func (id UnitID) Millimeter(f float64) float64 {
+	switch id {
+	case millimeter:
+		return f
+	case centimeter:
+		return f / 10
+	case decimeter:
+		return f / 100
+	default:
+		return f / 1000
+	}
+}
+func (id UnitID) Centimeter(f float64) float64 {
+	switch id {
+	case millimeter:
+		return f * 10
+	case centimeter:
+		return f
+	case decimeter:
+		return f / 10
+	default:
+		return f / 100
+	}
+}
+func (id UnitID) Decimeter(f float64) float64 {
+	switch id {
+	case millimeter:
+		return f * 100
+	case centimeter:
+		return f * 10
+	case decimeter:
+		return f
+	default:
+		return f / 10
+	}
+}
+func (id UnitID) Meter(f float64) float64 {
+	switch id {
+	case millimeter:
+		return f * 1000
+	case centimeter:
+		return f * 100
+	case decimeter:
+		return f * 10
+	default:
+		return f
+	}
+}
+
 /* Returns Name from SQL query */
 func (id UnitID) Name() (val string, err error) {
 	var s sql.NullString

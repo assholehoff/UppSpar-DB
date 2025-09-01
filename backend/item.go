@@ -358,7 +358,7 @@ func (m *Items) GetItemIDs() {
 			}
 		}
 		if e.scope["ModelName"] {
-			hit, _ = id.Model()
+			hit, _ = id.ModelName()
 			if !uniqueResults[hit] {
 				uniqueResults[hit] = true
 				m.Search.Completions.Append(hit)
@@ -538,134 +538,136 @@ func (f Filter) complex() filterComplex {
 		}
 	}
 	if s, _ := f.Model.Get(); s != "" {
-		if id, err := ModelIDFor(s); id != 0 && err == nil {
-			c.ModelID = id
-		} else {
-			c.Model = s
-		}
-	}
-	if s, _ := f.Width.Get(); s != "" {
-		if strings.Contains(s, "-") {
-			t := strings.Split(s, "-")
-			min, err := strconv.ParseFloat(t[0], 64)
-			if err != nil {
-				log.Println(err)
+		if c.MfrID != 0 {
+			if id, err := ModelIDFor(c.MfrID, s); id != 0 && err == nil {
+				c.ModelID = id
 			} else {
-				c.MinWidth = min
-			}
-			max, err := strconv.ParseFloat(t[1], 64)
-			if err != nil {
-				log.Println(err)
-			} else {
-				c.MaxWidth = max
-			}
-		} else {
-			w, err := strconv.ParseFloat(s, 64)
-			if err != nil {
-				log.Println(err)
-			} else {
-				c.MinWidth = w
-				c.MaxWidth = w
+				c.Model = s
 			}
 		}
-	}
-	if s, _ := f.Height.Get(); s != "" {
-		if strings.Contains(s, "-") {
-			t := strings.Split(s, "-")
-			min, err := strconv.ParseFloat(t[0], 64)
-			if err != nil {
-				log.Println(err)
+		if s, _ := f.Width.Get(); s != "" {
+			if strings.Contains(s, "-") {
+				t := strings.Split(s, "-")
+				min, err := strconv.ParseFloat(t[0], 64)
+				if err != nil {
+					log.Println(err)
+				} else {
+					c.MinWidth = min
+				}
+				max, err := strconv.ParseFloat(t[1], 64)
+				if err != nil {
+					log.Println(err)
+				} else {
+					c.MaxWidth = max
+				}
 			} else {
-				c.MinHeight = min
-			}
-			max, err := strconv.ParseFloat(t[1], 64)
-			if err != nil {
-				log.Println(err)
-			} else {
-				c.MaxHeight = max
-			}
-		} else {
-			w, err := strconv.ParseFloat(s, 64)
-			if err != nil {
-				log.Println(err)
-			} else {
-				c.MinHeight = w
-				c.MaxHeight = w
-			}
-		}
-	}
-	if s, _ := f.Depth.Get(); s != "" {
-		if strings.Contains(s, "-") {
-			t := strings.Split(s, "-")
-			min, err := strconv.ParseFloat(t[0], 64)
-			if err != nil {
-				log.Println(err)
-			} else {
-				c.MinDepth = min
-			}
-			max, err := strconv.ParseFloat(t[1], 64)
-			if err != nil {
-				log.Println(err)
-			} else {
-				c.MaxDepth = max
-			}
-		} else {
-			w, err := strconv.ParseFloat(s, 64)
-			if err != nil {
-				log.Println(err)
-			} else {
-				c.MinDepth = w
-				c.MaxDepth = w
+				w, err := strconv.ParseFloat(s, 64)
+				if err != nil {
+					log.Println(err)
+				} else {
+					c.MinWidth = w
+					c.MaxWidth = w
+				}
 			}
 		}
-	}
-	if s, _ := f.Volume.Get(); s != "" {
-		if strings.Contains(s, "-") {
-			t := strings.Split(s, "-")
-			min, err := strconv.ParseFloat(t[0], 64)
-			if err != nil {
-				log.Println(err)
+		if s, _ := f.Height.Get(); s != "" {
+			if strings.Contains(s, "-") {
+				t := strings.Split(s, "-")
+				min, err := strconv.ParseFloat(t[0], 64)
+				if err != nil {
+					log.Println(err)
+				} else {
+					c.MinHeight = min
+				}
+				max, err := strconv.ParseFloat(t[1], 64)
+				if err != nil {
+					log.Println(err)
+				} else {
+					c.MaxHeight = max
+				}
 			} else {
-				c.MinVolume = min
-			}
-			max, err := strconv.ParseFloat(t[1], 64)
-			if err != nil {
-				log.Println(err)
-			} else {
-				c.MaxVolume = max
-			}
-		} else {
-			w, err := strconv.ParseFloat(s, 64)
-			if err != nil {
-				log.Println(err)
-			} else {
-				c.MinVolume = w
-				c.MaxVolume = w
+				w, err := strconv.ParseFloat(s, 64)
+				if err != nil {
+					log.Println(err)
+				} else {
+					c.MinHeight = w
+					c.MaxHeight = w
+				}
 			}
 		}
-	}
-	if s, _ := f.Weight.Get(); s != "" {
-		if strings.Contains(s, "-") {
-			t := strings.Split(s, "-")
-			min, err := strconv.ParseFloat(t[0], 64)
-			if err != nil {
-				log.Println(err)
+		if s, _ := f.Depth.Get(); s != "" {
+			if strings.Contains(s, "-") {
+				t := strings.Split(s, "-")
+				min, err := strconv.ParseFloat(t[0], 64)
+				if err != nil {
+					log.Println(err)
+				} else {
+					c.MinDepth = min
+				}
+				max, err := strconv.ParseFloat(t[1], 64)
+				if err != nil {
+					log.Println(err)
+				} else {
+					c.MaxDepth = max
+				}
 			} else {
-				c.MinWeight = min
+				w, err := strconv.ParseFloat(s, 64)
+				if err != nil {
+					log.Println(err)
+				} else {
+					c.MinDepth = w
+					c.MaxDepth = w
+				}
 			}
-			max, err := strconv.ParseFloat(t[1], 64)
-			if err != nil {
-				log.Println(err)
+		}
+		if s, _ := f.Volume.Get(); s != "" {
+			if strings.Contains(s, "-") {
+				t := strings.Split(s, "-")
+				min, err := strconv.ParseFloat(t[0], 64)
+				if err != nil {
+					log.Println(err)
+				} else {
+					c.MinVolume = min
+				}
+				max, err := strconv.ParseFloat(t[1], 64)
+				if err != nil {
+					log.Println(err)
+				} else {
+					c.MaxVolume = max
+				}
 			} else {
-				c.MaxWeight = max
+				w, err := strconv.ParseFloat(s, 64)
+				if err != nil {
+					log.Println(err)
+				} else {
+					c.MinVolume = w
+					c.MaxVolume = w
+				}
 			}
-		} else {
-			w, err := strconv.ParseFloat(s, 64)
-			if err != nil {
-				log.Println(err)
+		}
+		if s, _ := f.Weight.Get(); s != "" {
+			if strings.Contains(s, "-") {
+				t := strings.Split(s, "-")
+				min, err := strconv.ParseFloat(t[0], 64)
+				if err != nil {
+					log.Println(err)
+				} else {
+					c.MinWeight = min
+				}
+				max, err := strconv.ParseFloat(t[1], 64)
+				if err != nil {
+					log.Println(err)
+				} else {
+					c.MaxWeight = max
+				}
 			} else {
-				c.MinWeight = w
-				c.MaxWeight = w
+				w, err := strconv.ParseFloat(s, 64)
+				if err != nil {
+					log.Println(err)
+				} else {
+					c.MinWeight = w
+					c.MaxWeight = w
+				}
 			}
 		}
 	}
