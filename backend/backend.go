@@ -113,18 +113,18 @@ func MfrIDFor(s string) (MfrID, error) {
 	// log.Printf("MfrIDFor(%s) is %d", s, id)
 	return id, nil
 }
-func ModelIDFor(s string) (ModelID, error) {
+func ModelIDFor(mfr MfrID, s string) (ModelID, error) {
 	// TODO handle when database contains multiple rows with 's'
 	var i NullInt
 	var id ModelID
 
-	query := `SELECT ModelID FROM Model WHERE Name = @0`
+	query := `SELECT ModelID FROM Model WHERE MfrID = ? AND Name = ?`
 	stmt, err := b.db.Prepare(query)
 	if err != nil {
 		return id, err
 	}
 	defer stmt.Close()
-	stmt.QueryRow(s).Scan(&id)
+	stmt.QueryRow(mfr, s).Scan(&id)
 
 	if !i.Valid {
 		return id, err

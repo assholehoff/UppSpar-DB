@@ -2,6 +2,7 @@ package gui
 
 import (
 	"UppSpar/backend"
+	"UppSpar/backend/bridge"
 	"log"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	xwidget "fyne.io/x/fyne/widget"
 
 	midget "github.com/assholehoff/fyne-midget"
+	ttw "github.com/dweymouth/fyne-tooltip/widget"
 )
 
 type itemView struct {
@@ -140,7 +142,6 @@ func newItemView(a *App) *itemView {
 			return
 		}
 		b.Items.SelectItem(i)
-		// iv.formView.Bind(b, i)
 	}
 	iv.list.OnUnselected = func(id widget.ListItemID) {
 		i, err := b.Items.GetItemIDFor(id)
@@ -150,7 +151,6 @@ func newItemView(a *App) *itemView {
 			return
 		}
 		b.Items.UnselectItem(i)
-		// iv.formView.Clear()
 	}
 	b.Items.ItemIDSelection.AddListener(binding.NewDataListener(func() {
 		ids, err := b.Items.ItemIDSelection.Get()
@@ -192,15 +192,26 @@ func newItemView(a *App) *itemView {
 		searchEntry.SetOptions(results)
 		searchEntry.ShowCompletion()
 	}
+	searchKeys := make(bridge.Checks)
+	searchKeys["Name"] = ttw.NewCheckWithData("Art", b.Items.Search.Scope["Name"])
+	searchKeys["Manufacturer"] = ttw.NewCheckWithData("Mfr", b.Items.Search.Scope["Manufacturer"])
+	searchKeys["ModelName"] = ttw.NewCheckWithData("Mdl", b.Items.Search.Scope["ModelName"])
+	searchKeys["ModelDesc"] = ttw.NewCheckWithData("Dsc", b.Items.Search.Scope["ModelDesc"])
 	toolbarLeft := container.NewGridWithRows(1,
-		layout.NewSpacer(),
-		widget.NewSelect([]string{
-			lang.X("item.form.label.name", "item.form.label.name"),
-			lang.X("item.form.label.manufacturer", "item.form.label.manufacturer"),
-		}, func(s string) {
-			// TODO redo this to fit map[string]bool
-			// b.Items.GetItemIDs()
-		}),
+		// layout.NewSpacer(),
+		container.NewHBox(
+			searchKeys["Name"],
+			searchKeys["Manufacturer"],
+			searchKeys["ModelName"],
+			searchKeys["ModelDesc"],
+		),
+		// widget.NewSelect([]string{
+		// 	lang.X("item.form.label.name", "item.form.label.name"),
+		// 	lang.X("item.form.label.manufacturer", "item.form.label.manufacturer"),
+		// }, func(s string) {
+		// 	// TODO redo this to fit map[string]bool
+		// 	// b.Items.GetItemIDs()
+		// }),
 		widget.NewSelect([]string{
 			lang.X("form.select.search.beginswith", "form.select.search.beginswith"),
 			lang.X("form.select.search.endswith", "form.select.search.endswith"),
@@ -271,8 +282,8 @@ func newItemView(a *App) *itemView {
 	)
 	searchBar := container.NewBorder(nil, nil, toolbarLeft, toolbarRight, searchEntry)
 	iv.toolbar = container.NewBorder(searchBar, filterBar, nil, nil)
-	toolbarLeft.Objects[1].(*widget.Select).SetSelectedIndex(0)  // search key
-	toolbarLeft.Objects[2].(*widget.Select).SetSelectedIndex(2)  // search type
+	// toolbarLeft.Objects[1].(*widget.Select).SetSelectedIndex(0)  // search key
+	toolbarLeft.Objects[1].(*widget.Select).SetSelectedIndex(2)  // search type
 	toolbarRight.Objects[1].(*widget.Select).SetSelectedIndex(0) // sort by
 	toolbarRight.Objects[2].(*widget.Select).SetSelectedIndex(0) // sort order
 	imgView := container.NewBorder(nil, nil, nil, nil)
@@ -298,8 +309,9 @@ type formEntries struct {
 	ImgURL5      *midget.Entry
 	SpecsURL     *midget.Entry
 	LongDesc     *midget.Entry
-	Manufacturer *midget.Entry
-	Model        *midget.Entry
+	Manufacturer *widget.SelectEntry
+	ModelName    *widget.SelectEntry
+	ModelDesc    *midget.Entry
 	ModelURL     *midget.Entry
 	Notes        *midget.Entry
 	Width        *midget.Entry
@@ -333,8 +345,8 @@ type formLabels struct {
 	AddDesc       *widget.Label
 	LongDesc      *widget.Label
 	Manufacturer  *widget.Label
-	Model         *widget.Label
-	ModelDescr    *widget.Label
+	ModelName     *widget.Label
+	ModelDesc     *widget.Label
 	ModelURL      *widget.Label
 	Notes         *widget.Label
 	Descr         *widget.Label
@@ -400,8 +412,9 @@ func newFormView(b *backend.Backend) *formView {
 			ImgURL5:      midget.NewEntry(),
 			SpecsURL:     midget.NewEntry(),
 			LongDesc:     midget.NewEntry(),
-			Manufacturer: midget.NewEntry(),
-			Model:        midget.NewEntry(),
+			Manufacturer: widget.NewSelectEntry([]string{}),
+			ModelName:    widget.NewSelectEntry([]string{}),
+			ModelDesc:    midget.NewEntry(),
 			ModelURL:     midget.NewEntry(),
 			Notes:        midget.NewEntry(),
 			Width:        midget.NewEntry(),
@@ -426,7 +439,8 @@ func newFormView(b *backend.Backend) *formView {
 			AddDesc:      widget.NewLabel(lang.X("item.form.label.adddesc", "item.form.label.adddesc")),
 			LongDesc:     widget.NewLabel(lang.X("item.form.label.longdesc", "item.form.label.longdesc")),
 			Manufacturer: widget.NewLabel(lang.X("item.form.label.manufacturer", "item.form.label.manufacturer")),
-			Model:        widget.NewLabel(lang.X("item.form.label.model", "item.form.label.model")),
+			ModelName:    widget.NewLabel(lang.X("item.form.label.modelname", "item.form.label.modelname")),
+			ModelDesc:    widget.NewLabel(lang.X("item.form.label.modeldesc", "item.form.label.modeldesc")),
 			ModelURL:     widget.NewLabel(lang.X("item.form.label.modelurl", "item.form.label.modelurl")),
 			Notes:        widget.NewLabel(lang.X("item.form.label.notes", "item.form.label.notes")),
 			Dimensions:   widget.NewLabel(lang.X("item.form.label.dimensions", "item.form.label.dimensions")),
@@ -459,12 +473,20 @@ func newFormView(b *backend.Backend) *formView {
 		v.selects.Category.Options = categories
 		v.selects.Category.Refresh()
 	}))
+	v.entries.ModelDesc.MultiLine = true
+	v.entries.ModelDesc.SetMinRowsVisible(5)
+	v.entries.ModelDesc.Wrapping = fyne.TextWrapWord
 	v.entries.LongDesc.MultiLine = true
 	v.entries.LongDesc.SetMinRowsVisible(5)
 	v.entries.LongDesc.Wrapping = fyne.TextWrapWord
 	v.entries.Notes.MultiLine = true
 	v.entries.Notes.SetMinRowsVisible(5)
 	v.entries.Notes.Wrapping = fyne.TextWrapWord
+
+	b.Metadata.MfrNameList.AddListener(binding.NewDataListener(func() {
+		manufacturers, _ := b.Metadata.MfrNameList.Get()
+		v.entries.Manufacturer.SetOptions(manufacturers)
+	}))
 
 	idbox := container.NewBorder(nil, nil, v.values.ItemID, nil, container.NewHBox(v.selects.Status))
 	spacebox := container.NewGridWithRows(1,
@@ -484,7 +506,8 @@ func newFormView(b *backend.Backend) *formView {
 		v.labels.Name, v.entries.Name,
 		v.labels.Category, v.selects.Category,
 		v.labels.Manufacturer, v.entries.Manufacturer,
-		v.labels.Model, v.entries.Model,
+		v.labels.ModelName, v.entries.ModelName,
+		v.labels.ModelDesc, v.entries.ModelDesc,
 		v.labels.ModelURL, v.entries.ModelURL,
 		v.labels.Dimensions, spacebox,
 		layout.NewSpacer(), massbox,
@@ -516,7 +539,8 @@ func (v formView) Bind(b *backend.Backend, id backend.ItemID) {
 	v.entries.ImgURL1.Bind(id.Item().ImgURL1)
 	v.entries.SpecsURL.Bind(id.Item().SpecsURL)
 	v.entries.Manufacturer.Bind(id.Item().Manufacturer)
-	v.entries.Model.Bind(id.Item().Model)
+	v.entries.ModelName.Bind(id.Item().ModelName)
+	v.entries.ModelDesc.Bind(id.Item().ModelDesc)
 	v.entries.ModelURL.Bind(id.Item().ModelURL)
 	v.entries.Notes.Bind(id.Item().Notes)
 	v.entries.Width.Bind(id.Item().WidthString)
@@ -530,6 +554,19 @@ func (v formView) Bind(b *backend.Backend, id backend.ItemID) {
 	v.selects.VolumeUnit.Bind(id.Item().VolumeUnit)
 	v.selects.WeightUnit.Bind(id.Item().WeightUnit)
 	v.selects.Status.Bind(id.Item().ItemStatus)
+
+	id.Item().Manufacturer.AddListener(binding.NewDataListener(func() {
+		models := func() []string {
+			var names []string
+			ids := id.Item().MfrID.Children()
+			for _, id := range ids {
+				name, _ := id.Name()
+				names = append(names, name)
+			}
+			return names
+		}()
+		v.entries.ModelName.SetOptions(models)
+	}))
 
 	/* This step is needed because child categories have spaces prepended to them in the select list */
 	cat, _ := id.Item().Category.Get()
@@ -598,7 +635,7 @@ func (v formView) Clear() {
 	v.entries.ImgURL1.Unbind()
 	v.entries.SpecsURL.Unbind()
 	v.entries.Manufacturer.Unbind()
-	v.entries.Model.Unbind()
+	v.entries.ModelName.Unbind()
 	v.entries.ModelURL.Unbind()
 	v.entries.Notes.Unbind()
 	v.entries.Width.Unbind()
@@ -625,7 +662,7 @@ func (v formView) Clear() {
 	v.entries.ImgURL1.SetText("")
 	v.entries.SpecsURL.SetText("")
 	v.entries.Manufacturer.SetText("")
-	v.entries.Model.SetText("")
+	v.entries.ModelName.SetText("")
 	v.entries.ModelURL.SetText("")
 	v.entries.Notes.SetText("")
 	v.entries.Volume.SetText("")
@@ -658,7 +695,7 @@ func (v formView) Disable() {
 	v.entries.SpecsURL.Disable()
 	v.entries.LongDesc.Disable()
 	v.entries.Manufacturer.Disable()
-	v.entries.Model.Disable()
+	v.entries.ModelName.Disable()
 	v.entries.ModelURL.Disable()
 	v.entries.Notes.Disable()
 	v.entries.Width.Disable()
@@ -681,7 +718,7 @@ func (v formView) Enable() {
 	v.entries.SpecsURL.Enable()
 	v.entries.LongDesc.Enable()
 	v.entries.Manufacturer.Enable()
-	v.entries.Model.Enable()
+	v.entries.ModelName.Enable()
 	v.entries.ModelURL.Enable()
 	v.entries.Notes.Enable()
 	v.entries.Width.Enable()
@@ -777,28 +814,28 @@ func (v *formView) hideSpecsURL() {
 }
 func (v *formView) showMfrModel() {
 	v.entries.Manufacturer.Enable()
-	v.entries.Model.Enable()
+	v.entries.ModelName.Enable()
 	v.entries.ModelURL.Enable()
 
 	v.entries.Manufacturer.Show()
-	v.entries.Model.Show()
+	v.entries.ModelName.Show()
 	v.entries.ModelURL.Show()
 
 	v.labels.Manufacturer.Show()
-	v.labels.Model.Show()
+	v.labels.ModelName.Show()
 	v.labels.ModelURL.Show()
 }
 func (v *formView) hideMfrModel() {
 	v.entries.Manufacturer.Disable()
-	v.entries.Model.Disable()
+	v.entries.ModelName.Disable()
 	v.entries.ModelURL.Disable()
 
 	v.entries.Manufacturer.Hide()
-	v.entries.Model.Hide()
+	v.entries.ModelName.Hide()
 	v.entries.ModelURL.Hide()
 
 	v.labels.Manufacturer.Hide()
-	v.labels.Model.Hide()
+	v.labels.ModelName.Hide()
 	v.labels.ModelURL.Hide()
 }
 func (v *formView) showPrice() {

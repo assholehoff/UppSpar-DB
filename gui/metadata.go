@@ -140,7 +140,7 @@ func newProductView(b *backend.Backend) *productView {
 			p.LoadMfr(backend.MfrID(MfrID))
 		}
 	}
-	tree.OnUnselected = func(uid widget.TreeNodeID) { tree.CloseBranch(uid); b.Metadata.ClearProdSelection() }
+	tree.OnUnselected = func(uid widget.TreeNodeID) { b.Metadata.ClearProdSelection() }
 
 	p.entry = make(bridge.Entries)
 	p.label = make(bridge.Labels)
@@ -356,7 +356,6 @@ func newCategoryView(b *backend.Backend) *categoryView {
 		cv.Load(b, b.Metadata.GetCatIDForTreeItem(uid))
 	}
 	cv.tree.OnUnselected = func(uid widget.TreeNodeID) {
-		cv.tree.CloseBranch(uid)
 		b.Metadata.UnselectCategory(b.Metadata.GetCatIDForTreeItem(uid))
 		cv.Unload()
 	}

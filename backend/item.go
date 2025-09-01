@@ -193,25 +193,6 @@ func NewItems() *Items {
 	return m
 }
 
-//	func (m *Items) GetAllItemIDs() {
-//		// TODO redo this to fetch all according to current selection/search config, then call after any mod to list
-//		query := `SELECT ItemID FROM Item WHERE ItemStatusID <> @0`
-//		stmt, err := b.db.Prepare(query)
-//		if err != nil {
-//			panic(err)
-//		}
-//		defer stmt.Close()
-//		rows, err := stmt.Query(ItemStatusDeleted)
-//		if err != nil {
-//			panic(err)
-//		}
-//		var id ItemID
-//		m.ItemIDList.Set([]any{})
-//		for rows.Next() {
-//			rows.Scan(&id)
-//			m.ItemIDList.Append(id)
-//		}
-//	}
 func (m *Items) GetItem(id ItemID) *Item {
 	if t := m.data[id]; t == nil {
 		t = newItem(id)
@@ -314,6 +295,7 @@ func (m *Items) DeleteItem(id ItemID) error {
 	return err
 }
 func (m *Items) SelectItem(id ItemID) error {
+	id.Item().FetchAllFields()
 	return m.ItemIDSelection.Append(id)
 }
 func (m *Items) UnselectItem(id ItemID) error {
@@ -331,37 +313,6 @@ func (m *Items) GetItemIDs() {
 	query = f.addFilterStrings(query)
 	query += fmt.Sprintf("AND ItemStatusID <> %d ", ItemStatusDeleted) // TODO update this
 	query += "ORDER BY " + e.sortby.String() + " " + e.order.String()
-
-	// searchString, err := m.SearchString.Get()
-	// var query string
-	// searchKey := m.searchKey.String()
-	// switch m.searchType {
-	// case BeginsWith:
-	// 	searchString = fmt.Sprintf("%s%%", searchString)
-	// 	query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` LIKE @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
-	// case EndsWith:
-	// 	searchString = fmt.Sprintf("%%%s", searchString)
-	// 	query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` LIKE @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
-	// case Contains:
-	// 	searchString = fmt.Sprintf("%%%s%%", searchString)
-	// 	query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` LIKE @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
-	// // TODO (maybe... probably not) fix RegEx
-	// // case RegExp:
-	// // 	query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` REGEXP @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
-	// default:
-	// 	// Equals
-	// 	query = `SELECT ItemID FROM Item WHERE ` + searchKey + ` LIKE @0 AND ItemStatusID <> @1 ORDER BY ` + m.sortKey.String() + ` ` + m.sortOrder.String()
-	// }
-	// stmt, err := m.db.Prepare(query)
-	// if err != nil {
-	// 	log.Println(fmt.Errorf("search: prepare statement failed: %w", err))
-	// 	return
-	// }
-	// defer stmt.Close()
-
-	// // clearQuery := strings.Replace(query, "@0", searchString, 1)
-	// // clearQuery = strings.Replace(clearQuery, "@1", fmt.Sprintf("%d", ItemStatusDeleted), 1)
-	// // log.Println(clearQuery)
 
 	log.Println(query)
 
@@ -414,31 +365,6 @@ func (m *Items) GetItemIDs() {
 			}
 		}
 	}
-
-	// rows, err := stmt.Query(searchString, ItemStatusDeleted)
-	// if err != nil && !errors.Is(err, sql.ErrNoRows) {
-	// 	log.Println(fmt.Errorf("Items.Search() error: %w", err))
-	// 	return
-	// }
-	// m.ItemIDList.Set([]any{})
-	// uniqueResults := make(map[string]bool)
-	// m.SearchResultUniqueCompletions.Set([]string{})
-	// for rows.Next() {
-	// 	var hit string
-	// 	var id ItemID
-	// 	rows.Scan(&id)
-	// 	m.ItemIDList.Append(id)
-	// 	if m.searchKey == SearchKeyName {
-	// 		hit, _ = id.Name()
-	// 	}
-	// 	if m.searchKey == SearchKeyManufacturer {
-	// 		hit, _ = id.Manufacturer()
-	// 	}
-	// 	if !uniqueResults[hit] {
-	// 		uniqueResults[hit] = true
-	// 		m.SearchResultUniqueCompletions.Append(hit)
-	// 	}
-	// }
 }
 
 type Search struct {
@@ -511,7 +437,7 @@ func (e searchComplex) addSearchStrings(query string) (string, string) {
 	case MatchBeginsWith:
 		term = fmt.Sprintf("%s%%", e.term)
 		if len(keys) > 1 {
-			query += " AND ("
+			query += "AND ("
 			for i, key := range keys {
 				if i > 0 {
 					query += " OR "
@@ -520,12 +446,12 @@ func (e searchComplex) addSearchStrings(query string) (string, string) {
 			}
 			query += ") "
 		} else {
-			query += fmt.Sprintf(" AND %s LIKE ? ", keys[0])
+			query += fmt.Sprintf("AND %s LIKE ? ", keys[0])
 		}
 	case MatchEndsWith:
 		term = fmt.Sprintf("%%%s", e.term)
 		if len(keys) > 1 {
-			query += " AND ("
+			query += "AND ("
 			for i, key := range keys {
 				if i > 0 {
 					query += " OR "
@@ -534,12 +460,12 @@ func (e searchComplex) addSearchStrings(query string) (string, string) {
 			}
 			query += ") "
 		} else {
-			query += fmt.Sprintf(" AND %s LIKE ? ", keys[0])
+			query += fmt.Sprintf("AND %s LIKE ? ", keys[0])
 		}
 	case MatchContains:
 		term = fmt.Sprintf("%%%s%%", e.term)
 		if len(keys) > 1 {
-			query += " AND ("
+			query += "AND ("
 			for i, key := range keys {
 				if i > 0 {
 					query += " OR "
@@ -548,13 +474,13 @@ func (e searchComplex) addSearchStrings(query string) (string, string) {
 			}
 			query += ") "
 		} else {
-			query += fmt.Sprintf(" AND %s LIKE ? ", keys[0])
+			query += fmt.Sprintf("AND %s LIKE ? ", keys[0])
 		}
 	default:
 		// MatchEquals
 		term = fmt.Sprintf("%s", e.term)
 		if len(keys) > 1 {
-			query += " AND ("
+			query += "AND ("
 			for i, key := range keys {
 				if i > 0 {
 					query += " OR "
@@ -563,7 +489,7 @@ func (e searchComplex) addSearchStrings(query string) (string, string) {
 			}
 			query += ") "
 		} else {
-			query += fmt.Sprintf(" AND %s LIKE ? ", keys[0])
+			query += fmt.Sprintf("AND %s LIKE ? ", keys[0])
 		}
 	}
 	return query, term
@@ -819,7 +745,7 @@ type Item struct {
 	MfrID        MfrID
 	Manufacturer binding.String
 	ModelID      ModelID
-	Model        binding.String
+	ModelName    binding.String
 	ModelDesc    binding.String
 	ModelURL     binding.String
 	Notes        binding.String
@@ -849,7 +775,42 @@ func newItem(id ItemID) *Item {
 		ModelID: ModelID(0),
 	}
 
-	t.getAllFields()
+	t.ItemIDString = binding.NewString()
+	t.Name = binding.NewString()
+	t.Category = binding.NewString()
+	t.priceFloat = binding.NewFloat()
+	t.Currency = binding.NewString()
+	t.Unit = binding.NewString()
+	t.vatFloat = binding.NewFloat()
+	t.Priority = binding.NewBool()
+	t.stockFloat = binding.NewFloat()
+	t.ImgURL1 = binding.NewString()
+	t.ImgURL2 = binding.NewString()
+	t.ImgURL3 = binding.NewString()
+	t.ImgURL4 = binding.NewString()
+	t.ImgURL5 = binding.NewString()
+	t.SpecsURL = binding.NewString()
+	t.AddDesc = binding.NewString()
+	t.LongDesc = binding.NewString()
+	t.Manufacturer = binding.NewString()
+	t.ModelName = binding.NewString()
+	t.ModelDesc = binding.NewString()
+	t.ModelURL = binding.NewString()
+	t.Notes = binding.NewString()
+	t.widthFloat = binding.NewFloat()
+	t.heightFloat = binding.NewFloat()
+	t.depthFloat = binding.NewFloat()
+	t.weightFloat = binding.NewFloat()
+	t.volumeFloat = binding.NewFloat()
+	t.LengthUnit = binding.NewString()
+	t.VolumeUnit = binding.NewString()
+	t.WeightUnit = binding.NewString()
+	t.ItemStatus = binding.NewString()
+
+	t.DateCreated = binding.NewString()
+	t.DateModified = binding.NewString()
+
+	t.FetchAllFields()
 
 	t.PriceString = binding.FloatToStringWithFormat(t.priceFloat, "%.2f")
 	t.VatString = binding.FloatToStringWithFormat(t.vatFloat, "%.2f")
@@ -877,7 +838,7 @@ func newItem(id ItemID) *Item {
 	t.AddDesc.AddListener(binding.NewDataListener(func() { t.ItemID.SetAddDesc(); t.ItemID.CompileLongDesc() }))
 	t.LongDesc.AddListener(binding.NewDataListener(func() { t.ItemID.SetLongDesc(); t.ItemID.CompileLongDesc() }))
 	t.Manufacturer.AddListener(binding.NewDataListener(func() { t.ItemID.SetManufacturer(); t.ItemID.CompileLongDesc() }))
-	t.Model.AddListener(binding.NewDataListener(func() { t.ItemID.SetModelName(); t.ItemID.CompileLongDesc() }))
+	t.ModelName.AddListener(binding.NewDataListener(func() { t.ItemID.SetModelName(); t.ItemID.CompileLongDesc() }))
 	t.ModelURL.AddListener(binding.NewDataListener(func() { t.ItemID.SetModelURL(); t.ItemID.CompileLongDesc() }))
 	t.Notes.AddListener(binding.NewDataListener(func() { t.ItemID.SetNotes(); t.ItemID.CompileLongDesc() }))
 	t.widthFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetWidth(); t.ItemID.CompileAddDesc(); t.ItemID.CompileLongDesc() }))
@@ -895,42 +856,7 @@ func newItem(id ItemID) *Item {
 	return t
 }
 
-func (t *Item) getAllFields() error {
-	t.ItemIDString = binding.NewString()
-	t.Name = binding.NewString()
-	t.Category = binding.NewString()
-	t.priceFloat = binding.NewFloat()
-	t.Currency = binding.NewString()
-	t.Unit = binding.NewString()
-	t.vatFloat = binding.NewFloat()
-	t.Priority = binding.NewBool()
-	t.stockFloat = binding.NewFloat()
-	t.ImgURL1 = binding.NewString()
-	t.ImgURL2 = binding.NewString()
-	t.ImgURL3 = binding.NewString()
-	t.ImgURL4 = binding.NewString()
-	t.ImgURL5 = binding.NewString()
-	t.SpecsURL = binding.NewString()
-	t.AddDesc = binding.NewString()
-	t.LongDesc = binding.NewString()
-	t.Manufacturer = binding.NewString()
-	t.Model = binding.NewString()
-	t.ModelDesc = binding.NewString()
-	t.ModelURL = binding.NewString()
-	t.Notes = binding.NewString()
-	t.widthFloat = binding.NewFloat()
-	t.heightFloat = binding.NewFloat()
-	t.depthFloat = binding.NewFloat()
-	t.weightFloat = binding.NewFloat()
-	t.volumeFloat = binding.NewFloat()
-	t.LengthUnit = binding.NewString()
-	t.VolumeUnit = binding.NewString()
-	t.WeightUnit = binding.NewString()
-	t.ItemStatus = binding.NewString()
-
-	t.DateCreated = binding.NewString()
-	t.DateModified = binding.NewString()
-
+func (t *Item) FetchAllFields() error {
 	var Name, Currency, Unit, ImgURL1, ImgURL2, ImgURL3, ImgURL4, ImgURL5, SpecsURL sql.NullString
 	var AddDesc, LongDesc, Manufacturer, ModelName, ModelDesc, ModelURL, Notes, DateCreated, DateModified sql.NullString
 	var Price, QuantityInPrice, Vat, Stock, Width, Height, Depth, Volume, Weight sql.NullFloat64
@@ -1003,11 +929,15 @@ FROM Item WHERE ItemID = @0`
 
 	if MfrID != 0 {
 		if n, _ := MfrID.Name(); manufacturer == "" && n != manufacturer {
+			log.Printf("MfrID is set to %d", MfrID)
 			manufacturer = n
 		}
+	} else {
+		log.Printf("MfrID is unset")
 	}
 
 	if ModelID != 0 {
+		log.Printf("ModelID is set to %d", ModelID)
 		if n, _ := ModelID.Name(); model == "" && n != model {
 			model = n
 		}
@@ -1064,6 +994,8 @@ FROM Item WHERE ItemID = @0`
 				WeightUnitID = u
 			}
 		}
+	} else {
+		log.Printf("ModelID is unset")
 	}
 
 	t.ItemIDString.Set(t.ItemID.String())
@@ -1084,7 +1016,7 @@ FROM Item WHERE ItemID = @0`
 	t.AddDesc.Set(AddDesc.String)
 	t.LongDesc.Set(LongDesc.String)
 	t.Manufacturer.Set(manufacturer)
-	t.Model.Set(model)
+	t.ModelName.Set(model)
 	t.ModelDesc.Set(modelDesc)
 	t.ModelURL.Set(modelUrl)
 	t.Notes.Set(Notes.String)
@@ -1100,6 +1032,9 @@ FROM Item WHERE ItemID = @0`
 
 	var created, modified time.Time
 	stockholm, err := time.LoadLocation("Europe/Stockholm")
+	if err != nil {
+		log.Printf("time.LoadLocation error: %s", err)
+	}
 	if DateCreated.Valid {
 		utc, err := time.Parse(subsec, DateCreated.String)
 		created = utc.In(stockholm)
