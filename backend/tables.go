@@ -127,7 +127,32 @@ FOREIGN KEY(StorageID) REFERENCES Storage(StorageID))`)
 		backend.db.Exec(`CREATE TRIGGER UpdateDateModified
 AFTER UPDATE ON Item FOR EACH ROW
 BEGIN
-UPDATE Item SET DateModified = datetime('now', 'subsec') WHERE ItemID = old.ItemID;
+    UPDATE Item SET DateModified = datetime('now', 'subsec') WHERE ItemID = old.ItemID;
+END`)
+		backend.db.Exec(`CREATE TRIGGER UpdateModelData AFTER UPDATE OF ModelID ON Item
+FOR EACH ROW WHEN new.ModelID <> old.ModelID AND new.ModelID <> 0
+BEGIN
+    UPDATE Item SET
+    CatID =  (SELECT CatID FROM Model WHERE ModelID = new.ModelID),
+    ModelName = (SELECT Name FROM Model WHERE ModelID = new.ModelID),
+    ModelDesc = (SELECT Desc FROM Model WHERE ModelID = new.ModelID),
+    ModelURL = (SELECT ModelURL FROM Model WHERE ModelID = new.ModelID),
+    ImgURL1 = (CASE WHEN old.ImgURL1 = '' THEN (SELECT ImgURL1 FROM Model WHERE ModelID = new.ModelID) ELSE old.ImgURL1 END),
+    ImgURL2 = (CASE WHEN old.ImgURL2 = '' THEN (SELECT ImgURL2 FROM Model WHERE ModelID = new.ModelID) ELSE old.ImgURL2 END),
+    ImgURL3 = (CASE WHEN old.ImgURL3 = '' THEN (SELECT ImgURL3 FROM Model WHERE ModelID = new.ModelID) ELSE old.ImgURL3 END),
+    ImgURL4 = (CASE WHEN old.ImgURL4 = '' THEN (SELECT ImgURL4 FROM Model WHERE ModelID = new.ModelID) ELSE old.ImgURL4 END),
+    ImgURL5 = (CASE WHEN old.ImgURL5 = '' THEN (SELECT ImgURL5 FROM Model WHERE ModelID = new.ModelID) ELSE old.ImgURL5 END),
+    SpecsURL = (CASE WHEN old.SpecsURL = '' THEN (SELECT SpecsURL FROM Model WHERE ModelID = new.ModelID) ELSE old.SpecsURL END),
+    ModelURL = (CASE WHEN old.ModelURL = '' THEN (SELECT ModelURL FROM Model WHERE ModelID = new.ModelID) ELSE old.ModelURL END),
+    Width = (SELECT Width FROM Model WHERE ModelID = new.ModelID),
+    Height = (SELECT Height FROM Model WHERE ModelID = new.ModelID),
+    Depth = (SELECT Depth FROM Model WHERE ModelID = new.ModelID),
+    Volume = (SELECT Volume FROM Model WHERE ModelID = new.ModelID),
+    Weight = (SELECT Weight FROM Model WHERE ModelID = new.ModelID),
+    LengthUnitID = (SELECT LengthUnitID FROM Model WHERE ModelID = new.ModelID),
+    VolumeUnitID = (SELECT VolumeUnitID FROM Model WHERE ModelID = new.ModelID),
+    WeightUnitID = (SELECT WeightUnitID FROM Model WHERE ModelID = new.ModelID)
+    WHERE ItemID = old.ItemID;
 END`)
 		touched = true
 	}
@@ -337,6 +362,9 @@ FOREIGN KEY(CatID) REFERENCES Category(CatID) ON DELETE CASCADE)`)
 		backend.db.Exec(`CREATE TABLE Image(
 ImgID INTEGER PRIMARY KEY AUTOINCREMENT, 
 ImgData BLOB, 
+ImgFileDate TEXT,
+ImgSHA1 TEXT,
+ImgSize INT,
 ImgThumb BLOB, 
 ImgURL TEXT DEFAULT '', 
 Deleted BOOL DEFAULT false),`)

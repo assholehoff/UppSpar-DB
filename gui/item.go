@@ -21,6 +21,8 @@ import (
 	ttw "github.com/dweymouth/fyne-tooltip/widget"
 )
 
+// TODO redo with maps just like metadata
+
 type itemView struct {
 	bound     backend.ItemID
 	container *fyne.Container
@@ -372,7 +374,7 @@ type formSelects struct {
 }
 
 type formView struct {
-	container *fyne.Container
+	container *container.Scroll
 	entries   *formEntries
 	selects   *formSelects
 	labels    *formLabels
@@ -483,6 +485,9 @@ func newFormView(b *backend.Backend) *formView {
 	v.entries.Notes.SetMinRowsVisible(5)
 	v.entries.Notes.Wrapping = fyne.TextWrapWord
 
+	v.values.LongDesc.Wrapping = fyne.TextWrapWord
+	v.values.AddDesc.Wrapping = fyne.TextWrapWord
+
 	b.Metadata.MfrNameList.AddListener(binding.NewDataListener(func() {
 		manufacturers, _ := b.Metadata.MfrNameList.Get()
 		v.entries.Manufacturer.SetOptions(manufacturers)
@@ -499,7 +504,7 @@ func newFormView(b *backend.Backend) *formView {
 		container.NewBorder(nil, nil, v.labels.Volume, v.selects.VolumeUnit, v.entries.Volume),
 		container.NewBorder(nil, nil, v.labels.Weight, v.selects.WeightUnit, v.entries.Weight),
 	)
-	v.container = container.New(layout.NewFormLayout(),
+	v.container = container.NewVScroll(container.New(layout.NewFormLayout(),
 		layout.NewSpacer(), container.NewHBox(v.labels.DateCreated, v.values.DateCreated),
 		layout.NewSpacer(), container.NewHBox(v.labels.DateModified, v.values.DateModified),
 		v.labels.ItemID, idbox,
@@ -518,7 +523,7 @@ func newFormView(b *backend.Backend) *formView {
 		layout.NewSpacer(), widget.NewRichTextFromMarkdown(`### `+lang.L("Preview")),
 		v.labels.LongDesc, v.values.LongDesc,
 		v.labels.AddDesc, v.values.AddDesc,
-	)
+	))
 	v.Clear()
 	return v
 }
@@ -574,8 +579,9 @@ func (v formView) Bind(b *backend.Backend, id backend.ItemID) {
 
 	id.Item().CatID.Category().Config["ShowPrice"].AddListener(binding.NewDataListener(func() {
 		if cid, _ := id.CatID(); cid == backend.CatID(1) {
+			// TODO fixa asap
 			v.hideStatus()
-			v.hideCategory()
+			// v.hideCategory()
 			v.hideImgURL()
 			v.hideSpecsURL()
 			v.hideMfrModel()

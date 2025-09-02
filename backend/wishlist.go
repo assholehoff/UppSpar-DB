@@ -1,9 +1,11 @@
 package backend
 
+import "fyne.io/fyne/v2/data/binding"
+
 /* Wishlist and function to apply wishes to items in inventory */
 
-type Wishlist struct{}
+type Wishlist binding.UntypedTree
 
-func NewWishlist() *Wishlist {
-	return &Wishlist{}
+func NewWishlist() Wishlist {
+	return binding.NewUntypedTree()
 }

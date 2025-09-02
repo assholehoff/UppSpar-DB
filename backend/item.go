@@ -357,13 +357,13 @@ func (m *Items) GetItemIDs() {
 				m.Search.Completions.Append(hit)
 			}
 		}
-		if e.scope["ModelName"] {
-			hit, _ = id.ModelName()
-			if !uniqueResults[hit] {
-				uniqueResults[hit] = true
-				m.Search.Completions.Append(hit)
-			}
-		}
+		// if e.scope["ModelName"] {
+		// 	hit, _ = id.ModelName()
+		// 	if !uniqueResults[hit] {
+		// 		uniqueResults[hit] = true
+		// 		m.Search.Completions.Append(hit)
+		// 	}
+		// }
 	}
 }
 

@@ -19,7 +19,7 @@ type Backend struct {
 	Journal  *journal.Journal
 	Metadata *Metadata
 	Settings *Settings
-	Wishlist *Wishlist
+	Wishlist Wishlist
 }
 
 func NewBackend(file string) (*Backend, error) {
