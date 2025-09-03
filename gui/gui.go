@@ -7,7 +7,7 @@ import (
 )
 
 type gui struct {
-	items    *itemView
+	items    *items
 	journal  *journalView
 	metadata *metadataView
 	settings *settingsView
@@ -17,7 +17,7 @@ type gui struct {
 
 func (a *App) newGui() {
 	a.gui = &gui{}
-	// a.gui.items = newItemView(a)
+	a.gui.items = newItems(a)
 	a.gui.journal = newJournalView(a.backend)
 	a.gui.metadata = newMetadataView(a.backend)
 	a.gui.settings = newSettingsView(a.backend)
