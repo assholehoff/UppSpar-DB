@@ -11,6 +11,14 @@ import (
 
 type Checks map[string]*ttw.Check
 
+func (c Checks) Bind(m map[string]binding.Bool) {
+	for key, val := range m {
+		if c[key] == nil {
+			c[key] = ttw.NewCheck(key, func(b bool) {})
+		}
+		c[key].Bind(val)
+	}
+}
 func (c Checks) Disable() {
 	for _, val := range c {
 		val.Disable()
@@ -106,8 +114,40 @@ func (l Labels) Show() {
 	}
 }
 
+type RadioConfig struct {
+	Options  binding.StringList
+	Function binding.Untyped
+}
+
 type Radios map[string]*widget.RadioGroup
 
+func (r Radios) Bind(m map[string]RadioConfig) {
+	for key, val := range m {
+		if r[key] == nil {
+			r[key] = widget.NewRadioGroup([]string{}, func(string) {})
+		}
+		val.Options.AddListener(binding.NewDataListener(func() {
+			opt, _ := val.Options.Get()
+			r[key].Options = opt
+			r[key].Refresh()
+		}))
+		val.Function.AddListener(binding.NewDataListener(func() {
+			fn, _ := val.Function.Get()
+			r[key].OnChanged = fn.(func(string))
+			r[key].Refresh()
+		}))
+	}
+}
+func (r Radios) Setup(o map[string][]string, f map[string]func(string)) {
+	for key := range o {
+		if r[key] == nil {
+			r[key] = widget.NewRadioGroup([]string{}, func(string) {})
+		}
+		r[key].Options = o[key]
+		r[key].OnChanged = f[key]
+		r[key].Refresh()
+	}
+}
 func (r Radios) Disable() {
 	for _, val := range r {
 		val.Disable()
@@ -134,8 +174,39 @@ func (r Radios) Uncheck() {
 	}
 }
 
+type SelectConfig struct {
+	Options  binding.StringList
+	Function binding.Untyped
+}
+
 type Selects map[string]*ttw.Select
 
+func (s Selects) Bind(m map[string]SelectConfig) {
+	for key, val := range m {
+		if s[key] == nil {
+			s[key] = ttw.NewSelect([]string{}, func(string) {})
+		}
+		val.Options.AddListener(binding.NewDataListener(func() {
+			opt, _ := val.Options.Get()
+			s[key].SetOptions(opt)
+		}))
+		val.Function.AddListener(binding.NewDataListener(func() {
+			fun, _ := val.Function.Get()
+			s[key].OnChanged = fun.(func(string))
+			s[key].Refresh()
+		}))
+	}
+}
+func (s Selects) Setup(o map[string][]string, f map[string]func(string)) {
+	for key, val := range o {
+		if s[key] == nil {
+			s[key] = ttw.NewSelect([]string{}, func(string) {})
+		}
+		s[key].SetOptions(val)
+		s[key].OnChanged = f[key]
+		s[key].Refresh()
+	}
+}
 func (s Selects) Clear() {
 	for _, val := range s {
 		val.ClearSelected()
