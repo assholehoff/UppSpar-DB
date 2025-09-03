@@ -27,3 +27,9 @@ func newMfr(id MfrID) *Manufacturer {
 	mfr.Name.AddListener(binding.NewDataListener(func() { mfr.MfrID.SetName(); b.Metadata.GetMfrIDs(); b.Metadata.GetProductTree() }))
 	return mfr
 }
+
+func (r *Manufacturer) Bindings() map[string]binding.String {
+	m := make(map[string]binding.String)
+	m["Name"] = r.Name
+	return m
+}

@@ -840,7 +840,7 @@ func newItem(id ItemID) *Item {
 	t.AddDesc.AddListener(binding.NewDataListener(func() { t.ItemID.SetAddDesc(); t.ItemID.CompileLongDesc() }))
 	t.LongDesc.AddListener(binding.NewDataListener(func() { t.ItemID.SetLongDesc(); t.ItemID.CompileLongDesc() }))
 	t.Manufacturer.AddListener(binding.NewDataListener(func() { t.ItemID.SetManufacturer(); t.ItemID.CompileLongDesc() }))
-	t.ModelName.AddListener(binding.NewDataListener(func() { t.ItemID.SetModelName(); t.ItemID.CompileLongDesc() }))
+	t.ModelName.AddListener(binding.NewDataListener(func() { t.ItemID.SetModelName(); t.FetchAllFields(); t.ItemID.CompileLongDesc() }))
 	t.ModelURL.AddListener(binding.NewDataListener(func() { t.ItemID.SetModelURL(); t.ItemID.CompileLongDesc() }))
 	t.Notes.AddListener(binding.NewDataListener(func() { t.ItemID.SetNotes(); t.ItemID.CompileLongDesc() }))
 	t.widthFloat.AddListener(binding.NewDataListener(func() { t.ItemID.SetWidth(); t.ItemID.CompileAddDesc(); t.ItemID.CompileLongDesc() }))
@@ -856,6 +856,43 @@ func newItem(id ItemID) *Item {
 	// TODO implement SearchWords
 
 	return t
+}
+
+func (t *Item) Bindings() map[string]binding.String {
+	m := make(map[string]binding.String)
+	m["ItemIDString"] = t.ItemIDString
+	m["Name"] = t.Name
+	m["Category"] = t.Category
+	m["PriceString"] = t.PriceString
+	m["Currency"] = t.Currency
+	m["Unit"] = t.Unit
+	m["VatString"] = t.VatString
+	m["StockString"] = t.StockString
+	m["ImgURL1"] = t.ImgURL1
+	m["ImgURL2"] = t.ImgURL2
+	m["ImgURL3"] = t.ImgURL3
+	m["ImgURL4"] = t.ImgURL4
+	m["ImgURL5"] = t.ImgURL5
+	m["SpecsURL"] = t.SpecsURL
+	m["AddDesc"] = t.AddDesc
+	m["LongDesc"] = t.LongDesc
+	m["Manufacturer"] = t.Manufacturer
+	m["ModelName"] = t.ModelName
+	m["ModelDesc"] = t.ModelDesc
+	m["ModelURL"] = t.ModelURL
+	m["Notes"] = t.Notes
+	m["WidthString"] = t.WidthString
+	m["HeightString"] = t.HeightString
+	m["DepthString"] = t.DepthString
+	m["VolumeString"] = t.VolumeString
+	m["WeightString"] = t.WeightString
+	m["LengthUnit"] = t.LengthUnit
+	m["VolumeUnit"] = t.VolumeUnit
+	m["WeightUnit"] = t.WeightUnit
+	m["ItemStatus"] = t.ItemStatus
+	m["DateCreated"] = t.DateCreated
+	m["DateModified"] = t.DateModified
+	return m
 }
 
 func (t *Item) FetchAllFields() error {

@@ -120,7 +120,7 @@ func (m *Metadata) CreateNewProduct() (id ModelID, err error) {
 		return
 	}
 	id = ModelID(i)
-	m.GetModelIDs()
+	// m.GetModelIDs()
 	m.GetProductTree()
 	return
 }
@@ -189,7 +189,7 @@ func (m *Metadata) GetCatIDForListItem(index widget.ListItemID) CatID {
 	}
 	return id.(CatID)
 }
-func (m *Metadata) GetListItemIDFor(s string) widget.ListItemID {
+func (m *Metadata) GetListItemIDForCategory(s string) widget.ListItemID {
 	cats, err := m.Categories.Get()
 	if err != nil {
 		log.Printf("Metadata.GetListItemIDFor(%s) error: %s", s, err)
@@ -370,9 +370,9 @@ func (m *Metadata) GetMfrIDs() {
 		m.MfrNameList.Append(n)
 	}
 }
-func (m *Metadata) GetModelIDs() {
-	query := `SELECT ModelID FROM Model`
-	rows, err := b.db.Query(query)
+func (m *Metadata) GetModelIDs(id MfrID) {
+	query := `SELECT ModelID FROM Model WHERE MfrID = ?`
+	rows, err := b.db.Query(query, id)
 	if err != nil {
 		log.Println(err)
 		return

@@ -5,8 +5,9 @@ go 1.24.5
 require (
 	fyne.io/fyne/v2 v2.6.2
 	fyne.io/x/fyne v0.0.0-20250827163406-39fd826f385e
-	github.com/assholehoff/fyne-midget v0.0.2-alpha
+	github.com/assholehoff/fyne-midget v0.0.2-beta
 	github.com/assholehoff/fyne-theme v0.0.1-beta
+	github.com/disintegration/imaging v1.6.2
 	github.com/dweymouth/fyne-tooltip v0.3.3
 	github.com/mattn/go-sqlite3 v1.14.30
 	github.com/xuri/excelize/v2 v2.9.1
@@ -16,7 +17,6 @@ require (
 	fyne.io/systray v1.11.0 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/disintegration/imaging v1.6.2 // indirect
 	github.com/fredbi/uri v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fyne-io/gl-js v0.2.0 // indirect

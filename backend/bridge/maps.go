@@ -1,6 +1,9 @@
 package bridge
 
 import (
+	"slices"
+
+	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 	midget "github.com/assholehoff/fyne-midget"
 	ttw "github.com/dweymouth/fyne-tooltip/widget"
@@ -33,9 +36,22 @@ func (c Checks) Show() {
 		val.Show()
 	}
 }
+func (c Checks) Uncheck() {
+	for _, val := range c {
+		val.SetChecked(false)
+	}
+}
 
 type Entries map[string]*midget.Entry
 
+func (e Entries) Bind(m map[string]binding.String) {
+	for key, val := range m {
+		if e[key] == nil {
+			e[key] = midget.NewEntry()
+		}
+		e[key].Bind(val)
+	}
+}
 func (e Entries) Clear() {
 	for _, val := range e {
 		val.SetText("")
@@ -112,6 +128,11 @@ func (r Radios) Show() {
 		val.Show()
 	}
 }
+func (r Radios) Uncheck() {
+	for _, val := range r {
+		val.SetSelected("")
+	}
+}
 
 type Selects map[string]*ttw.Select
 
@@ -144,4 +165,13 @@ func (s Selects) Show() {
 	for _, val := range s {
 		val.Show()
 	}
+}
+
+func Sieve(m map[string]binding.String, list []string) map[string]binding.String {
+	for key := range m {
+		if !slices.Contains(list, key) {
+			delete(m, key)
+		}
+	}
+	return m
 }

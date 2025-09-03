@@ -155,6 +155,7 @@ func (id ItemID) Manufacturer() (string, error) {
 	return id.getString("Manufacturer")
 }
 func (id ItemID) ModelID() (ModelID, error) {
+	// TODO make sure to reload all data from SQL after setting this
 	mid, err := id.getInt("ModelID")
 	return ModelID(mid), err
 }
@@ -171,23 +172,18 @@ func (id ItemID) Notes() (string, error) {
 	return id.getString("Notes")
 }
 func (id ItemID) Width() (float64, error) {
-	// TODO set this (for ModelID) in SQL with a trigger instead
 	return id.getFloat("Width")
 }
 func (id ItemID) Height() (float64, error) {
-	// TODO set this (for ModelID) in SQL with a trigger instead
 	return id.getFloat("Height")
 }
 func (id ItemID) Depth() (float64, error) {
-	// TODO set this (for ModelID) in SQL with a trigger instead
 	return id.getFloat("Depth")
 }
 func (id ItemID) Volume() (float64, error) {
-	// TODO set this (for ModelID) in SQL with a trigger instead
 	return id.getFloat("Volume")
 }
 func (id ItemID) Weight() (float64, error) {
-	// TODO set this (for ModelID) in SQL with a trigger instead
 	return id.getFloat("Weight")
 }
 func (id ItemID) LengthUnit() (string, error) {
@@ -517,6 +513,16 @@ func (id ItemID) SetModelName() error {
 	s, err := id.Item().ModelName.Get()
 	if err != nil {
 		return fmt.Errorf("ItemID(%d).SetModel(%s) error: %s", id, s, err)
+	}
+	if id.Item().MfrID != 0 {
+		if i, err := ModelIDFor(id.Item().MfrID, s); i != 0 {
+			if err != nil {
+				log.Println(err)
+			}
+			log.Printf("set ModelID to %d", i)
+			id.SetModelID(i)
+			return nil
+		}
 	}
 	return id.setString(key, s)
 }

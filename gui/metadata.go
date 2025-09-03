@@ -301,7 +301,7 @@ func (pv *productView) LoadModel(b *backend.Backend, id backend.ModelID) {
 	}
 
 	cat, _ := id.Model().Category.Get()
-	pv.selects["Category"].SetSelectedIndex(b.Metadata.GetListItemIDFor(cat))
+	pv.selects["Category"].SetSelectedIndex(b.Metadata.GetListItemIDForCategory(cat))
 
 	pv.entry.Enable()
 	pv.selects.Enable()

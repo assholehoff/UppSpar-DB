@@ -32,8 +32,7 @@ go.work.sum
 .vscode/
 
 # My scribblings
-anteckningar.org
-uppspar.org
+*.org
 
 # Old and inactive
 *.inactive

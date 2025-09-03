@@ -30,6 +30,12 @@ func newCategory(id CatID) *Category {
 	c.Parent.AddListener(binding.NewDataListener(func() { c.CatID.SetParent() }))
 	return c
 }
+func (c *Category) Bindings() map[string]binding.String {
+	m := make(map[string]binding.String)
+	m["Name"] = c.Name
+	m["Parent"] = c.Parent
+	return m
+}
 func (c *Category) makeConfigMap() {
 	addConfig := func(key string) {
 		c.Config[key] = binding.NewBool()

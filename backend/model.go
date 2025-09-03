@@ -149,3 +149,27 @@ FROM Model WHERE ModelID = @0`
 	mdl.WeightUnit.AddListener(binding.NewDataListener(func() { mdl.ModelID.SetWeightUnit() }))
 	return mdl
 }
+
+func (o *Model) Bindings() map[string]binding.String {
+	m := make(map[string]binding.String)
+	m["Name"] = o.Name
+	m["Manufacturer"] = o.Manufacturer
+	m["Category"] = o.Category
+	m["Desc"] = o.Desc
+	m["ImgURL1"] = o.ImgURL1
+	m["ImgURL2"] = o.ImgURL2
+	m["ImgURL3"] = o.ImgURL3
+	m["ImgURL4"] = o.ImgURL4
+	m["ImgURL5"] = o.ImgURL5
+	m["SpecsURL"] = o.SpecsURL
+	m["ModelURL"] = o.ModelURL
+	m["Width"] = o.Width
+	m["Height"] = o.Height
+	m["Depth"] = o.Depth
+	m["Volume"] = o.Volume
+	m["Weight"] = o.Weight
+	m["LengthUnit"] = o.LengthUnit
+	m["VolumeUnit"] = o.VolumeUnit
+	m["WeightUnit"] = o.WeightUnit
+	return m
+}
