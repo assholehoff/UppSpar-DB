@@ -1,11 +1,28 @@
 package bridge
 
 var (
-	CategoryFormCheckKeys  = []string{}
-	CategoryFormEntryKeys  = []string{}
-	CategoryFormLabelKeys  = []string{}
+	CategoryFormCheckKeys = []string{
+		"Price",
+		"Dimensions",
+		"Mass",
+		"Volume",
+		"Condition",
+	}
+	CategoryFormEntryKeys = []string{
+		"Name",
+	}
+	CategoryFormLabelKeys = []string{
+		"Name",
+		"Price",
+		"Dimensions",
+		"Mass",
+		"Volume",
+		"Condition",
+	}
 	CategoryFormRadioKeys  = []string{}
-	CategoryFormSelectKeys = []string{}
+	CategoryFormSelectKeys = []string{
+		"Parent",
+	}
 	CategoryFormValuesKeys = []string{}
 
 	ItemFormCheckKeys = []string{
@@ -86,16 +103,70 @@ var (
 	}
 
 	ManufacturerFormCheckKeys  = []string{}
-	ManufacturerFormEntryKeys  = []string{}
-	ManufacturerFormLabelKeys  = []string{}
+	ManufacturerFormEntryKeys  = []string{"Name"}
+	ManufacturerFormLabelKeys  = []string{"Name"}
 	ManufacturerFormRadioKeys  = []string{}
 	ManufacturerFormSelectKeys = []string{}
 	ManufacturerFormValuesKeys = []string{}
 
-	ModelFormCheckKeys  = []string{}
-	ModelFormEntryKeys  = []string{}
-	ModelFormLabelKeys  = []string{}
+	ModelFormCheckKeys = []string{}
+	ModelFormEntryKeys = []string{
+		"Name",
+		"Desc",
+		"ImgURL1",
+		"ImgURL2",
+		"ImgURL3",
+		"ImgURL4",
+		"ImgURL5",
+		"SpecsURL",
+		"Manufacturer",
+		"ModelURL",
+		"Dimensions",
+		"Width",
+		"Height",
+		"Depth",
+		"Volume",
+		"Weight",
+	}
+	ModelFormLabelKeys = []string{
+		"Name",
+		"Desc",
+		"ImgURL1",
+		"ImgURL2",
+		"ImgURL3",
+		"ImgURL4",
+		"ImgURL5",
+		"SpecsURL",
+		"Manufacturer",
+		"ModelURL",
+		"Dimensions",
+		"Width",
+		"Height",
+		"Depth",
+		"Volume",
+		"Weight",
+	}
 	ModelFormRadioKeys  = []string{}
-	ModelFormSelectKeys = []string{}
+	ModelFormSelectKeys = []string{
+		"Category",
+		"Manufacturer",
+		"LengthUnit",
+		"VolumeUnit",
+		"WeightUnit",
+	}
 	ModelFormValuesKeys = []string{}
 )
+
+func Combine(s ...[]string) []string {
+	var list []string
+	keys := make(map[string]bool)
+	for _, slc := range s {
+		for _, str := range slc {
+			if _, val := keys[str]; !val {
+				keys[str] = true
+				list = append(list, str)
+			}
+		}
+	}
+	return list
+}

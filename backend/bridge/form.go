@@ -6,60 +6,119 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/widget"
+	midget "github.com/assholehoff/fyne-midget"
+	ttw "github.com/dweymouth/fyne-tooltip/widget"
 )
 
 type Form struct {
 	Container *container.Scroll
-	Checks    Checks
-	Entries   Entries
-	Labels    Labels
-	Radios    Radios
-	Selects   Selects
-	Values    Labels
+	Check     Checks
+	Entry     Entries
+	Label     Labels
+	Radio     Radios
+	Select    Selects
+	Value     Labels
 }
 
 func NewForm(b *backend.Backend, w fyne.Window) *Form {
 	c := container.New(layout.NewFormLayout())
+
 	f := &Form{
 		Container: container.NewVScroll(c),
-		Checks:    make(Checks),
-		Entries:   make(Entries),
-		Labels:    make(Labels),
-		Radios:    make(Radios),
-		Selects:   make(Selects),
-		Values:    make(Labels),
+		Check:     make(Checks),
+		Entry:     make(Entries),
+		Label:     make(Labels),
+		Radio:     make(Radios),
+		Select:    make(Selects),
+		Value:     make(Labels),
 	}
+
+	for _, key := range Combine(
+		CategoryFormCheckKeys,
+		ItemFormCheckKeys,
+		ManufacturerFormCheckKeys,
+		ModelFormCheckKeys,
+	) {
+		f.Check[key] = ttw.NewCheck("Template", func(b bool) {})
+	}
+
+	for _, key := range Combine(
+		CategoryFormEntryKeys,
+		ItemFormEntryKeys,
+		ManufacturerFormEntryKeys,
+		ModelFormEntryKeys,
+	) {
+		f.Entry[key] = midget.NewEntry()
+	}
+
+	for _, key := range Combine(
+		CategoryFormLabelKeys,
+		ItemFormLabelKeys,
+		ManufacturerFormLabelKeys,
+		ModelFormLabelKeys,
+	) {
+		f.Label[key] = ttw.NewLabel("Template label")
+	}
+
+	for _, key := range Combine(
+		CategoryFormRadioKeys,
+		ItemFormRadioKeys,
+		ManufacturerFormRadioKeys,
+		ModelFormRadioKeys,
+	) {
+		f.Radio[key] = widget.NewRadioGroup([]string{}, func(s string) {})
+	}
+
+	for _, key := range Combine(
+		CategoryFormSelectKeys,
+		ItemFormSelectKeys,
+		ManufacturerFormSelectKeys,
+		ModelFormSelectKeys,
+	) {
+		f.Select[key] = ttw.NewSelect([]string{}, func(s string) {})
+	}
+
+	for _, key := range Combine(
+		CategoryFormValuesKeys,
+		ItemFormValueKeys,
+		ManufacturerFormValuesKeys,
+		ModelFormValuesKeys,
+	) {
+		f.Value[key] = ttw.NewLabel("Template value label text")
+	}
+
 	return f
 }
 
 func (f *Form) Clear() {
-	f.Checks.Uncheck()
-	f.Entries.Clear()
-	f.Radios.Uncheck()
-	f.Selects.Clear()
-	f.Values.Clear()
+	f.Check.Uncheck()
+	f.Entry.Clear()
+	f.Radio.Uncheck()
+	f.Select.Clear()
+	f.Value.Clear()
 }
 func (f *Form) Disable() {
-	f.Checks.Disable()
-	f.Entries.Disable()
-	f.Radios.Disable()
-	f.Selects.Disable()
+	f.Check.Disable()
+	f.Entry.Disable()
+	f.Radio.Disable()
+	f.Select.Disable()
 }
 func (f *Form) Enable() {
-	f.Checks.Enable()
-	f.Entries.Enable()
-	f.Radios.Enable()
-	f.Selects.Enable()
+	f.Check.Enable()
+	f.Entry.Enable()
+	f.Radio.Enable()
+	f.Select.Enable()
 }
 func (f *Form) LoadItem(id backend.ItemID) {
-	f.Entries.Bind(Sieve(id.Item().Bindings(), ItemFormEntryKeys))
+	f.Entry.Bind(Sieve(id.Item().Bindings(), ItemFormEntryKeys))
 }
 func (f *Form) LoadMfr(id backend.MfrID) {
-	f.Entries.Bind(Sieve(id.Manufacturer().Bindings(), ManufacturerFormEntryKeys))
+	f.Entry.Bind(Sieve(id.Manufacturer().Bindings(), ManufacturerFormEntryKeys))
 }
 func (f *Form) LoadModel(id backend.ModelID) {
-	f.Entries.Bind(Sieve(id.Model().Bindings(), ModelFormEntryKeys))
+	f.Entry.Bind(Sieve(id.Model().Bindings(), ModelFormEntryKeys))
 }
 func (f *Form) LoadCategory(id backend.CatID) {
-	f.Entries.Bind(Sieve(id.Category().Bindings(), CategoryFormEntryKeys))
+	f.Entry.Bind(Sieve(id.Category().Bindings(), CategoryFormEntryKeys))
 }
