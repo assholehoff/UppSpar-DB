@@ -129,6 +129,7 @@ AFTER UPDATE ON Item FOR EACH ROW
 BEGIN
     UPDATE Item SET DateModified = datetime('now', 'subsec') WHERE ItemID = old.ItemID;
 END`)
+		// TODO consider whether this trigger should overwrite all fields or not
 		backend.db.Exec(`CREATE TRIGGER UpdateModelData AFTER UPDATE OF ModelID ON Item
 FOR EACH ROW WHEN new.ModelID <> old.ModelID AND new.ModelID <> 0
 BEGIN

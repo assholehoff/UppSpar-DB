@@ -157,6 +157,7 @@ var (
 	ModelFormValuesKeys = []string{}
 )
 
+/* Return a slice with the strings from all the slices without repeating any string */
 func Combine(s ...[]string) []string {
 	var list []string
 	keys := make(map[string]bool)
