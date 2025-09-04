@@ -1,11 +1,12 @@
 package gui
 
 import (
+	"UppSpar/backend"
 	"UppSpar/backend/bridge"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/widget"
+	"fyne.io/fyne/v2/data/binding"
 )
 
 // TODO redo with maps just like metadata
@@ -22,16 +23,25 @@ func newItems(a *App) *items {
 	b := a.backend
 
 	v := &items{
-		form: bridge.NewForm(b, w),
-		list: bridge.NewList(b, w),
-		// search: bridge.NewSearchBar(b, w),
+		form:   bridge.NewForm(b, w),
+		list:   bridge.NewList(b, w),
+		search: bridge.NewSearchBar(b, w),
 	}
-
-	search := container.NewHBox(widget.NewLabel("Search bar"))
+	v.form.SetItemLayout()
+	b.Items.ItemIDSelection.AddListener(binding.NewDataListener(func() {
+		ids, err := b.Items.ItemIDSelection.Get()
+		if err != nil {
+			panic(err)
+		}
+		ItemID := ids[0].(backend.ItemID)
+		v.form.LoadItem(ItemID)
+	}))
 
 	split := container.NewHSplit(v.list.Container, v.form.Container)
+	split.SetOffset(0.125)
 
-	v.container = container.NewBorder(search, nil, nil, nil, split)
+	v.container = container.NewBorder(v.search.Container, nil, nil, nil, split)
+
 	// searchEntry := xwidget.NewCompletionEntry([]string{})
 	// searchEntry.Bind(b.Items.Search.Term)
 	// searchEntry.OnChanged = func(s string) {

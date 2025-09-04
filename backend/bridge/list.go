@@ -142,7 +142,7 @@ func NewList(b *backend.Backend, w fyne.Window) *List {
 			toolbar.Items[3].(*widget.ToolbarAction).Disable()
 			go func() {
 				fyne.Do(func() {
-					NewSaveFileDialog(b, w).Show()
+					NewExportExcelDialog(b, w).Show()
 					time.Sleep(100 * time.Millisecond)
 					toolbar.Items[3].(*widget.ToolbarAction).Enable()
 				})
@@ -152,7 +152,7 @@ func NewList(b *backend.Backend, w fyne.Window) *List {
 
 	statbar := widget.NewLabel("List/Tree statusbar")
 
-	c := container.NewBorder(toolbar, statbar, nil, nil, tree)
+	c := container.NewBorder(toolbar, statbar, nil, nil, list)
 
 	return &List{
 		Container: c,

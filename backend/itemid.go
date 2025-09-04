@@ -519,7 +519,7 @@ func (id ItemID) SetModelName() error {
 			if err != nil {
 				log.Println(err)
 			}
-			log.Printf("set ModelID to %d", i)
+			// log.Printf("set ModelID to %d", i)
 			id.SetModelID(i)
 			return nil
 		}

@@ -314,7 +314,7 @@ func (m *Items) GetItemIDs() {
 	query += fmt.Sprintf("AND ItemStatusID <> %d ", ItemStatusDeleted) // TODO update this
 	query += "ORDER BY " + e.sortby.String() + " " + e.order.String()
 
-	log.Println(query)
+	// log.Println(query)
 
 	var err error
 	var rows *sql.Rows
@@ -968,15 +968,15 @@ FROM Item WHERE ItemID = @0`
 
 	if MfrID != 0 {
 		if n, _ := MfrID.Name(); manufacturer == "" && n != manufacturer {
-			log.Printf("MfrID is set to %d", MfrID)
+			// log.Printf("MfrID is set to %d", MfrID)
 			manufacturer = n
 		}
 	} else {
-		log.Printf("MfrID is unset")
+		// log.Printf("MfrID is unset")
 	}
 
 	if ModelID != 0 {
-		log.Printf("ModelID is set to %d", ModelID)
+		// log.Printf("ModelID is set to %d", ModelID)
 		if n, _ := ModelID.Name(); model == "" && n != model {
 			model = n
 		}
@@ -1034,7 +1034,7 @@ FROM Item WHERE ItemID = @0`
 			}
 		}
 	} else {
-		log.Printf("ModelID is unset")
+		// log.Printf("ModelID is unset")
 	}
 
 	t.ItemIDString.Set(t.ItemID.String())

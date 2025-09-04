@@ -111,14 +111,31 @@ func (f *Form) Enable() {
 	f.Select.Enable()
 }
 func (f *Form) LoadItem(id backend.ItemID) {
+	f.Entry.Unbind()
+	f.Entry.Clear()
 	f.Entry.Bind(Sieve(id.Item().Bindings(), ItemFormEntryKeys))
 }
 func (f *Form) LoadMfr(id backend.MfrID) {
+	f.Entry.Unbind()
+	f.Entry.Clear()
 	f.Entry.Bind(Sieve(id.Manufacturer().Bindings(), ManufacturerFormEntryKeys))
 }
 func (f *Form) LoadModel(id backend.ModelID) {
+	f.Entry.Unbind()
+	f.Entry.Clear()
 	f.Entry.Bind(Sieve(id.Model().Bindings(), ModelFormEntryKeys))
 }
 func (f *Form) LoadCategory(id backend.CatID) {
+	f.Entry.Unbind()
+	f.Entry.Clear()
 	f.Entry.Bind(Sieve(id.Category().Bindings(), CategoryFormEntryKeys))
+}
+func (f *Form) SetItemLayout() {
+	c := container.New(
+		layout.NewFormLayout(),
+		layout.NewSpacer(), f.Value["DateCreated"],
+		layout.NewSpacer(), f.Value["DateModified"],
+		f.Label["ItemID"], f.Value["ItemID"],
+	)
+	f.Container = container.NewVScroll(c)
 }

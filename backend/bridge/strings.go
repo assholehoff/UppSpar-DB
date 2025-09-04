@@ -155,6 +155,13 @@ var (
 		"WeightUnit",
 	}
 	ModelFormValuesKeys = []string{}
+
+	SearchBarCheckKeys  = []string{}
+	SearchBarEntryKeys  = []string{}
+	SearchBarLabelKeys  = []string{}
+	SearchBarRadioKeys  = []string{}
+	SearchBarSelectKeys = []string{}
+	SearchBarValuesKeys = []string{}
 )
 
 /* Return a slice with the strings from all the slices without repeating any string */

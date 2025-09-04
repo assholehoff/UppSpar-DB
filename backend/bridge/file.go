@@ -10,7 +10,7 @@ import (
 	"fyne.io/fyne/v2/storage"
 )
 
-func NewSaveFileDialog(b *backend.Backend, w fyne.Window) *dialog.FileDialog {
+func NewExportExcelDialog(b *backend.Backend, w fyne.Window) *dialog.FileDialog {
 	d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
 		if writer != nil {
 			b.Items.ExportExcel(writer.URI().Path())
@@ -24,5 +24,17 @@ func NewSaveFileDialog(b *backend.Backend, w fyne.Window) *dialog.FileDialog {
 	d.SetDismissText(lang.L("Close"))
 	d.SetFileName("UppSpar-" + time.Now().Format("20060102-150405") + ".xlsx")
 	d.SetFilter(storage.NewMimeTypeFileFilter([]string{"application/excel"}))
+	return d
+}
+
+func NewOpenDatabaseDialog(w fyne.Window) *dialog.FileDialog {
+	// TODO whether to return a path or set through pointer ?
+	d := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {}, w)
+	return d
+}
+
+func NewSaveDatabaseDialog(w fyne.Window) *dialog.FileDialog {
+	// TODO whether to return a path or set through pointer ?
+	d := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {}, w)
 	return d
 }
