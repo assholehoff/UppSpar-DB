@@ -93,6 +93,11 @@ func (e Entries) Show() {
 
 type Labels map[string]*ttw.Label
 
+func (l Labels) Set(m map[string]string) {
+	for key, val := range m {
+		l[key].SetText(val)
+	}
+}
 func (l Labels) Clear() {
 	for _, val := range l {
 		val.SetText("")
@@ -114,30 +119,8 @@ func (l Labels) Show() {
 	}
 }
 
-type RadioConfig struct {
-	Options  binding.StringList
-	Function binding.Untyped
-}
-
 type Radios map[string]*widget.RadioGroup
 
-func (r Radios) Bind(m map[string]RadioConfig) {
-	for key, val := range m {
-		if r[key] == nil {
-			r[key] = widget.NewRadioGroup([]string{}, func(string) {})
-		}
-		val.Options.AddListener(binding.NewDataListener(func() {
-			opt, _ := val.Options.Get()
-			r[key].Options = opt
-			r[key].Refresh()
-		}))
-		val.Function.AddListener(binding.NewDataListener(func() {
-			fn, _ := val.Function.Get()
-			r[key].OnChanged = fn.(func(string))
-			r[key].Refresh()
-		}))
-	}
-}
 func (r Radios) Setup(o map[string][]string, f map[string]func(string)) {
 	for key := range o {
 		if r[key] == nil {
@@ -238,6 +221,7 @@ func (s Selects) Show() {
 	}
 }
 
+/* Return a map with only the keys found in list */
 func Sieve(m map[string]binding.String, list []string) map[string]binding.String {
 	for key := range m {
 		if !slices.Contains(list, key) {

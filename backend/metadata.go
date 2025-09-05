@@ -222,6 +222,18 @@ func (m *Metadata) GetCatIDForTreeItem(index widget.TreeNodeID) CatID {
 	}
 	return id.(CatID)
 }
+func (m *Metadata) CategoryList() []string {
+	cats, _ := m.Categories.Get()
+	return cats
+}
+func (m *Metadata) ItemStatusList() []string {
+	var strs []string
+	stats, _ := m.ItemStatusIDList.Get()
+	for _, stat := range stats {
+		strs = append(strs, stat.(ItemStatusID).LString())
+	}
+	return strs
+}
 func (m *Metadata) SelectCategory(id CatID) error {
 	return m.catSelection.Append(id)
 }

@@ -2,6 +2,8 @@ package bridge
 
 import (
 	"UppSpar/backend"
+	"fmt"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -9,6 +11,8 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	midget "github.com/assholehoff/fyne-midget"
 	// ttw "github.com/dweymouth/fyne-tooltip/widget"
 )
 
@@ -27,22 +31,9 @@ func NewList(b *backend.Backend, w fyne.Window) *List {
 	list = widget.NewListWithData(
 		b.Items.ItemIDList,
 		func() fyne.CanvasObject {
-			return container.NewVBox(
-				container.NewHBox(
-					&widget.Label{
-						Text:     "00000000",
-						SizeName: theme.SizeNameCaptionText,
-					},
-					&widget.Label{
-						Text:     "Category template text",
-						SizeName: theme.SizeNameCaptionText,
-					},
-				),
-				&widget.Label{
-					Text:      "Item name template",
-					TextStyle: fyne.TextStyle{Bold: true},
-				},
-			)
+			co := midget.NewLabel("Template item name", "00000000", "")
+			co.SetTop()
+			return co
 		},
 		func(di binding.DataItem, co fyne.CanvasObject) {
 			val, err := di.(binding.Untyped).Get()
@@ -50,9 +41,16 @@ func NewList(b *backend.Backend, w fyne.Window) *List {
 				panic(err)
 			}
 			ItemID := val.(backend.ItemID)
-			co.(*fyne.Container).Objects[0].(*fyne.Container).Objects[0].(*widget.Label).Bind(ItemID.Item().ItemIDString)
-			co.(*fyne.Container).Objects[0].(*fyne.Container).Objects[1].(*widget.Label).Bind(ItemID.Item().Category)
-			co.(*fyne.Container).Objects[1].(*widget.Label).Bind(ItemID.Item().Name)
+			subtext := binding.NewString()
+
+			ItemID.Item().Category.AddListener(binding.NewDataListener(func() {
+				id, _ := ItemID.Item().ItemIDString.Get()
+				cat, _ := ItemID.Item().Category.Get()
+				subtext.Set(fmt.Sprintf("%s : %s", id, strings.TrimSpace(strings.ToUpper(cat))))
+			}))
+
+			co.(*midget.Label).BindText(ItemID.Item().Name)
+			co.(*midget.Label).BindSubtext(subtext)
 		},
 	)
 	list.OnSelected = func(id widget.ListItemID) {

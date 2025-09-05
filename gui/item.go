@@ -23,22 +23,25 @@ func newItems(a *App) *items {
 	b := a.backend
 
 	v := &items{
-		form:   bridge.NewForm(b, w),
+		form:   bridge.NewItemForm(b, w),
 		list:   bridge.NewList(b, w),
 		search: bridge.NewSearchBar(b, w),
 	}
-	v.form.SetItemLayout()
+
 	b.Items.ItemIDSelection.AddListener(binding.NewDataListener(func() {
 		ids, err := b.Items.ItemIDSelection.Get()
 		if err != nil {
 			panic(err)
 		}
+		if len(ids) < 1 {
+			return
+		}
 		ItemID := ids[0].(backend.ItemID)
-		v.form.LoadItem(ItemID)
+		v.form.LoadItem(b, ItemID)
 	}))
 
 	split := container.NewHSplit(v.list.Container, v.form.Container)
-	split.SetOffset(0.125)
+	split.SetOffset(0.2)
 
 	v.container = container.NewBorder(v.search.Container, nil, nil, nil, split)
 

@@ -684,6 +684,7 @@ func (id ItemID) updateDateModified() {
 	if err != nil {
 		log.Println(err)
 	}
+	// log.Printf("ItemID(%d) updateDateModified to %s", dm.Format(time.DateTime))
 	id.Item().DateModified.Set(dm.Format(time.DateTime))
 }
 

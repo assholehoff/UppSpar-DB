@@ -855,10 +855,15 @@ func newItem(id ItemID) *Item {
 
 	// TODO implement SearchWords
 
+	// t.DateModified.AddListener(binding.NewDataListener(func() {
+	// 	dm, _ := t.DateModified.Get()
+	// 	log.Printf("ItemID(%d) DateModified: %s", id, dm)
+	// }))
+
 	return t
 }
 
-func (t *Item) Bindings() map[string]binding.String {
+func (t *Item) StringBindings() map[string]binding.String {
 	m := make(map[string]binding.String)
 	m["ItemIDString"] = t.ItemIDString
 	m["Name"] = t.Name
